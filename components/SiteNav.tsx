@@ -24,6 +24,9 @@ export default function SiteNav() {
           <Link href="/dashboard" className="hover:text-ink">
             {t.nav.dashboard}
           </Link>
+          <Link href="/developers" className="hover:text-ink">
+            {t.nav.developers}
+          </Link>
           <LangToggle lang={lang} setLang={setLang} />
         </nav>
       </div>

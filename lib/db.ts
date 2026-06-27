@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import type {
+  AgentEvent,
   Candidate,
   Mission,
   MissionCandidate,
@@ -221,6 +222,46 @@ export async function updateMissionCandidate(
     (x) => x.mission_id === missionId && x.candidate_id === candidateId,
   );
   if (mc) Object.assign(mc, stamped);
+}
+
+// ---------- mission_events (agent activity trace) ----------
+
+export async function addMissionEvent(
+  missionId: string,
+  step: string,
+  detail = "",
+): Promise<void> {
+  const row: AgentEvent = {
+    id: randomUUID(),
+    mission_id: missionId,
+    step,
+    detail,
+    created_at: new Date().toISOString(),
+  };
+  if (usingSupabase) {
+    const { id, ...insert } = row;
+    const { error } = await sb().from("mission_events").insert(insert);
+    if (error) throw error;
+    return;
+  }
+  store().missionEvents.push(row);
+}
+
+export async function getMissionEvents(
+  missionId: string,
+): Promise<AgentEvent[]> {
+  if (usingSupabase) {
+    const { data, error } = await sb()
+      .from("mission_events")
+      .select("*")
+      .eq("mission_id", missionId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as AgentEvent[];
+  }
+  return store()
+    .missionEvents.filter((e) => e.mission_id === missionId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 // ---------- helpers ----------

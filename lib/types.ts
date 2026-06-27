@@ -76,6 +76,15 @@ export interface ShortlistEntry extends MissionCandidate {
   candidate: Candidate;
 }
 
+/** One step the agent took, surfaced as a live activity trace (proof of autonomy). */
+export interface AgentEvent {
+  id: string;
+  mission_id: string;
+  step: string; // e.g. brief_parsed, ranked, call_answered, whatsapp_sent
+  detail: string;
+  created_at: string;
+}
+
 /** Shape returned by the agent (Claude or mock) before persistence. */
 export interface AgentShortlistItem {
   candidate_id: string;

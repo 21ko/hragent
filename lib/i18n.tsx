@@ -12,7 +12,7 @@ import type { RoleType } from "./types";
 export type Lang = "fr" | "en";
 
 interface Dict {
-  nav: { new: string; dashboard: string };
+  nav: { new: string; dashboard: string; developers: string };
   roles: Record<RoleType, string>;
   missionStatus: Record<string, string>;
   callStatus: Record<string, string>;
@@ -57,13 +57,18 @@ interface Dict {
     simNo: string;
     noCandidatesTitle: string;
     newMission: string;
+    activityTitle: string;
     working: string[];
   };
   dashboard: { title: string; newMission: string; loading: string; empty: string; emptyCta: string };
 }
 
 const FR: Dict = {
-  nav: { new: "Nouvelle mission", dashboard: "Tableau de bord" },
+  nav: {
+    new: "Nouvelle mission",
+    dashboard: "Tableau de bord",
+    developers: "Développeurs",
+  },
   roles: {
     hostess: "Hôtesse",
     security: "Agent de sécurité",
@@ -136,6 +141,7 @@ const FR: Dict = {
     simNo: "Simuler NON",
     noCandidatesTitle: "Aucun candidat éligible",
     newMission: "Nouvelle mission",
+    activityTitle: "Activité de l'agent",
     working: [
       "Analyse du brief de mission…",
       "Recherche des candidats dans la base…",
@@ -155,7 +161,7 @@ const FR: Dict = {
 };
 
 const EN: Dict = {
-  nav: { new: "New mission", dashboard: "Dashboard" },
+  nav: { new: "New mission", dashboard: "Dashboard", developers: "Developers" },
   roles: {
     hostess: "Host / Hostess",
     security: "Security guard",
@@ -227,6 +233,7 @@ const EN: Dict = {
     simNo: "Simulate NO",
     noCandidatesTitle: "No eligible candidates",
     newMission: "New mission",
+    activityTitle: "Agent activity",
     working: [
       "Parsing the job brief…",
       "Searching the candidate database…",

@@ -2,13 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { Mission, ShortlistEntry } from "@/lib/types";
+import type { AgentEvent, Mission, ShortlistEntry } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 
 interface Payload {
   mission: Mission;
   shortlist: ShortlistEntry[];
+  events: AgentEvent[];
 }
+
+const STEP_ICON: Record<string, string> = {
+  brief_parsed: "📋",
+  candidates_fetched: "🔍",
+  ranked: "🏆",
+  no_candidates: "⚠️",
+  call_answered: "📞",
+  call_no_answer: "↪️",
+  whatsapp_sent: "💬",
+  whatsapp_failed: "❌",
+  awaiting_replies: "⏳",
+};
 
 export default function ResultsPage({
   params,
@@ -51,7 +64,7 @@ export default function ResultsPage({
 
   if (!data) return <AgentWorking steps={t.results.working} />;
 
-  const { mission, shortlist } = data;
+  const { mission, shortlist, events } = data;
   const top3 = shortlist.slice(0, 3);
 
   async function copyBrief() {
@@ -113,6 +126,9 @@ export default function ResultsPage({
           )}
         </div>
       </div>
+
+      {/* Agent activity trace (proof of multi-step autonomy) */}
+      {events.length > 0 && <AgentActivity events={events} title={t.results.activityTitle} />}
 
       {/* No eligible candidates */}
       {mission.status === "no_candidates" && (
@@ -211,6 +227,39 @@ export default function ResultsPage({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function AgentActivity({
+  events,
+  title,
+}: {
+  events: AgentEvent[];
+  title: string;
+}) {
+  return (
+    <div className="card">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent/50" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+        </span>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+          {title}
+        </h2>
+      </div>
+      <ol className="mt-4 space-y-3">
+        {events.map((ev) => (
+          <li key={ev.id} className="flex gap-3 text-sm">
+            <span className="mt-0.5 shrink-0">{STEP_ICON[ev.step] ?? "•"}</span>
+            <div>
+              <span className="font-mono text-xs text-muted">{ev.step}</span>
+              <p className="text-ink">{ev.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

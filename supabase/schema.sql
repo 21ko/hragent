@@ -91,4 +91,15 @@ create index if not exists mc_mission_idx on missions_candidates (mission_id);
 create unique index if not exists mc_mission_candidate_idx
   on missions_candidates (mission_id, candidate_id);
 
+-- ---------- mission_events (agent activity trace) ----------
+create table if not exists mission_events (
+  id          uuid primary key default gen_random_uuid(),
+  mission_id  uuid not null references missions (id) on delete cascade,
+  step        text not null,
+  detail      text not null default '',
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists me_mission_idx on mission_events (mission_id, created_at);
+
 -- Seed candidates are inserted by scripts/seed.ts (so the data stays in one place).

@@ -1,4 +1,9 @@
-import type { Candidate, Mission, MissionCandidate } from "./types";
+import type {
+  AgentEvent,
+  Candidate,
+  Mission,
+  MissionCandidate,
+} from "./types";
 import { SEED_CANDIDATES } from "./seed-data";
 
 /**
@@ -12,6 +17,7 @@ interface MockDB {
   candidates: Candidate[];
   missions: Mission[];
   missionsCandidates: MissionCandidate[];
+  missionEvents: AgentEvent[];
 }
 
 const g = globalThis as unknown as { __hragentStore?: MockDB };
@@ -22,6 +28,7 @@ export function store(): MockDB {
       candidates: SEED_CANDIDATES.map((c) => ({ ...c })),
       missions: [],
       missionsCandidates: [],
+      missionEvents: [],
     };
   }
   return g.__hragentStore;

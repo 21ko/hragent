@@ -20,6 +20,30 @@ Built with **Next.js 14 (App Router)**, **Claude (`claude-sonnet-4-6`)**,
 
 The UI is bilingual — toggle **FR / EN** in the top nav.
 
+## Staffly as a tool for other agents (plugin layer)
+
+Staffly exposes a stable, agent-facing API so another AI agent can use it as a
+tool — see the in-app **Developers** page.
+
+| Tool | Endpoint |
+| --- | --- |
+| `create_staffing_mission` | `POST /api/v1/missions` |
+| `get_mission` (status + shortlist + **agent trace**) | `GET /api/v1/missions/{id}` |
+| `list_candidates` | `GET /api/v1/candidates?role=` |
+| self-discovery (OpenAI + MCP schemas) | `GET /api/v1/manifest` |
+
+Auth: send `Authorization: Bearer $STAFFLY_API_KEY` (open in demo mode when the
+env var is unset). Plug it into any MCP client (e.g. Claude Desktop) with the
+bundled server:
+
+```bash
+STAFFLY_BASE_URL=http://localhost:3000 npm run mcp
+```
+
+Every mission records a step-by-step **agent activity trace** (brief parsed →
+ranked → called → WhatsApp fallback → awaiting replies), shown live on the
+results page and returned by `GET /api/v1/missions/{id}`.
+
 ## Runs with zero keys
 
 The app has a mock-fallback layer, so the full **form → agent → results** loop
