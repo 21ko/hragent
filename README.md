@@ -5,7 +5,20 @@ brief, matches candidates from a database, computes fair pricing, and reaches
 out to the best profiles over WhatsApp.
 
 Built with **Next.js 14 (App Router)**, **Claude (`claude-sonnet-4-6`)**,
-**Supabase**, **Twilio WhatsApp**, and **Tailwind CSS**.
+**Supabase**, **Twilio (voice + WhatsApp)**, and **Tailwind CSS**.
+
+## What the agent does
+
+1. **Parses** the job brief and **shortlists** the top 5 eligible candidates
+   (or reports **"no eligible candidates"** with a reason — it never forces a
+   weak match).
+2. **Prices** each fairly: `base × experience × urgency`.
+3. **Calls** the top candidates first, running a short gig-work HR screen
+   (availability, relevant experience, hours, role-specific check). **If they
+   don't pick up, it falls back to a WhatsApp message.**
+4. Tracks call answers and WhatsApp OUI/NON replies live.
+
+The UI is bilingual — toggle **FR / EN** in the top nav.
 
 ## Runs with zero keys
 

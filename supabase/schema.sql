@@ -8,11 +8,20 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type mission_status as enum ('pending_outreach', 'awaiting_replies', 'complete');
+  create type mission_status as enum ('pending_outreach', 'awaiting_replies', 'complete', 'no_candidates');
 exception when duplicate_object then null; end $$;
+
+-- mission_status may pre-exist without 'no_candidates'; add it idempotently.
+do $$ begin
+  alter type mission_status add value if not exists 'no_candidates';
+exception when others then null; end $$;
 
 do $$ begin
   create type whatsapp_status as enum ('pending', 'sent', 'replied_yes', 'replied_no', 'failed');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type call_status as enum ('pending', 'calling', 'answered', 'no_answer', 'failed');
 exception when duplicate_object then null; end $$;
 
 -- ---------- candidates ----------
@@ -47,8 +56,12 @@ create table if not exists missions (
   status                mission_status not null default 'pending_outreach',
   pricing_summary       text,
   mission_brief_fr      text,
+  no_candidates_reason  text,
   created_at            timestamptz not null default now()
 );
+
+-- Idempotent add for pre-existing missions tables.
+alter table missions add column if not exists no_candidates_reason text;
 
 create index if not exists missions_created_idx on missions (created_at desc);
 
@@ -61,10 +74,18 @@ create table if not exists missions_candidates (
   rationale        text,
   suggested_rate   integer not null,
   confidence_score numeric,
+  call_status      call_status not null default 'pending',
+  call_notes       text,
+  outreach_channel text,
   whatsapp_status  whatsapp_status not null default 'pending',
   twilio_sid       text,
   updated_at       timestamptz not null default now()
 );
+
+-- Idempotent adds for pre-existing join tables.
+alter table missions_candidates add column if not exists call_status call_status not null default 'pending';
+alter table missions_candidates add column if not exists call_notes text;
+alter table missions_candidates add column if not exists outreach_channel text;
 
 create index if not exists mc_mission_idx on missions_candidates (mission_id);
 create unique index if not exists mc_mission_candidate_idx

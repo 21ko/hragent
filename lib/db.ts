@@ -201,16 +201,17 @@ export async function updateWhatsappStatusByPhone(
   return target;
 }
 
-export async function setMissionCandidateTwilioSid(
+/** General patch for one mission_candidate row (call/whatsapp status, channel…). */
+export async function updateMissionCandidate(
   missionId: string,
   candidateId: string,
-  sid: string,
-  status: WhatsappStatus,
+  patch: Partial<MissionCandidate>,
 ): Promise<void> {
+  const stamped = { ...patch, updated_at: new Date().toISOString() };
   if (usingSupabase) {
     const { error } = await sb()
       .from("missions_candidates")
-      .update({ twilio_sid: sid, whatsapp_status: status })
+      .update(stamped)
       .eq("mission_id", missionId)
       .eq("candidate_id", candidateId);
     if (error) throw error;
@@ -219,10 +220,7 @@ export async function setMissionCandidateTwilioSid(
   const mc = store().missionsCandidates.find(
     (x) => x.mission_id === missionId && x.candidate_id === candidateId,
   );
-  if (mc) {
-    mc.twilio_sid = sid;
-    mc.whatsapp_status = status;
-  }
+  if (mc) Object.assign(mc, stamped);
 }
 
 // ---------- helpers ----------

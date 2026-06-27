@@ -3,12 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoleType } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 
-const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
-  { value: "hostess", label: "Hôtesse" },
-  { value: "security", label: "Agent de sécurité" },
-  { value: "event_staff", label: "Staff événementiel" },
-];
+const ROLE_ORDER: RoleType[] = ["hostess", "security", "event_staff"];
 
 function defaultDate() {
   const d = new Date();
@@ -18,6 +15,7 @@ function defaultDate() {
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,12 +46,12 @@ export default function HomePage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "L'agent a échoué.");
+        throw new Error(body.error || "Agent failed.");
       }
       const { missionId } = await res.json();
       router.push(`/results/${missionId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+      setError(err instanceof Error ? err.message : "Unknown error.");
       setSubmitting(false);
     }
   }
@@ -62,26 +60,20 @@ export default function HomePage() {
     <div className="grid gap-10 md:grid-cols-[1fr_minmax(420px,460px)]">
       {/* Pitch column */}
       <div className="pt-2">
-        <span className="badge bg-surface text-muted">Agent IA · bout en bout</span>
+        <span className="badge bg-surface text-muted">{t.home.badge}</span>
         <h1 className="mt-4 text-4xl font-semibold leading-[1.1] tracking-tight">
-          Recrutez du personnel événementiel en moins de 60 secondes.
+          {t.home.title}
         </h1>
         <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
-          Décrivez votre mission. Notre agent IA analyse le brief, shortliste les
-          meilleurs profils de notre base, calcule un tarif juste, et les contacte
-          par WhatsApp — sans intervention humaine.
+          {t.home.subtitle}
         </p>
         <ul className="mt-6 space-y-3 text-sm">
-          {[
-            "Matching intelligent par ville, expérience et langues",
-            "Tarification transparente (expérience × urgence)",
-            "Relance WhatsApp automatique des 3 meilleurs profils",
-          ].map((t) => (
-            <li key={t} className="flex items-start gap-2.5 text-ink">
+          {t.home.bullets.map((b) => (
+            <li key={b} className="flex items-start gap-2.5 text-ink">
               <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
                 ✓
               </span>
-              {t}
+              {b}
             </li>
           ))}
         </ul>
@@ -90,20 +82,20 @@ export default function HomePage() {
       {/* Form column */}
       <form onSubmit={onSubmit} className="card space-y-5">
         <div>
-          <label className="field-label">Type de poste</label>
+          <label className="field-label">{t.home.role}</label>
           <div className="grid grid-cols-3 gap-2">
-            {ROLE_OPTIONS.map((opt) => (
+            {ROLE_ORDER.map((role) => (
               <button
                 type="button"
-                key={opt.value}
-                onClick={() => set("role_type", opt.value)}
+                key={role}
+                onClick={() => set("role_type", role)}
                 className={`rounded-lg border px-2 py-2.5 text-xs font-medium transition ${
-                  form.role_type === opt.value
+                  form.role_type === role
                     ? "border-accent bg-accent/5 text-accent"
                     : "border-line text-muted hover:border-ink/30"
                 }`}
               >
-                {opt.label}
+                {t.roles[role]}
               </button>
             ))}
           </div>
@@ -111,7 +103,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="field-label">Nombre de personnes</label>
+            <label className="field-label">{t.home.people}</label>
             <input
               type="number"
               min={1}
@@ -121,7 +113,7 @@ export default function HomePage() {
             />
           </div>
           <div>
-            <label className="field-label">Ville</label>
+            <label className="field-label">{t.home.city}</label>
             <input
               className="field-input"
               value={form.city}
@@ -131,7 +123,7 @@ export default function HomePage() {
         </div>
 
         <div>
-          <label className="field-label">Date de la mission</label>
+          <label className="field-label">{t.home.date}</label>
           <input
             type="date"
             className="field-input"
@@ -142,7 +134,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="field-label">Heure de début</label>
+            <label className="field-label">{t.home.start}</label>
             <input
               type="time"
               className="field-input"
@@ -151,7 +143,7 @@ export default function HomePage() {
             />
           </div>
           <div>
-            <label className="field-label">Heure de fin</label>
+            <label className="field-label">{t.home.end}</label>
             <input
               type="time"
               className="field-input"
@@ -162,9 +154,7 @@ export default function HomePage() {
         </div>
 
         <div>
-          <label className="field-label">
-            Budget max (€ / personne / jour)
-          </label>
+          <label className="field-label">{t.home.budget}</label>
           <input
             type="number"
             min={0}
@@ -177,7 +167,7 @@ export default function HomePage() {
         </div>
 
         <div>
-          <label className="field-label">Description de l'événement</label>
+          <label className="field-label">{t.home.description}</label>
           <textarea
             rows={3}
             className="field-input resize-none"
@@ -193,11 +183,9 @@ export default function HomePage() {
         )}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full">
-          {submitting ? "L'agent travaille…" : "Lancer l'agent IA"}
+          {submitting ? t.home.submitting : t.home.submit}
         </button>
-        <p className="text-center text-xs text-muted">
-          L'agent shortliste, tarifie et contacte les candidats automatiquement.
-        </p>
+        <p className="text-center text-xs text-muted">{t.home.formHint}</p>
       </form>
     </div>
   );

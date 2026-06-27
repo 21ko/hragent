@@ -43,8 +43,14 @@ const OUTPUT_SCHEMA = {
     },
     pricing_summary: { type: "string" },
     mission_brief_fr: { type: "string" },
+    no_candidates_reason: { type: "string" },
   },
-  required: ["shortlist", "pricing_summary", "mission_brief_fr"],
+  required: [
+    "shortlist",
+    "pricing_summary",
+    "mission_brief_fr",
+    "no_candidates_reason",
+  ],
 } as const;
 
 function buildPrompt(brief: JobBrief, candidates: Candidate[]): string {
@@ -71,16 +77,19 @@ function buildPrompt(brief: JobBrief, candidates: Candidate[]): string {
 ${roster}
 
 # Ta mission
-1. Classe les 5 meilleurs candidats par adéquation (rank 1 = meilleur). Privilégie la même ville, l'expérience pertinente, les langues utiles, et la disponibilité.
-2. Pour CHAQUE candidat retenu, calcule un tarif juste avec la formule:
+1. Évalue l'éligibilité. Un candidat n'est PAS éligible s'il est indisponible, ou si son tarif calculé dépasse nettement le budget (plus de 20%), ou s'il ne correspond pas du tout au besoin (mauvaise ville sans alternative, profil inadapté).
+   - Si AUCUN candidat n'est éligible, renvoie "shortlist": [] (liste vide) et explique pourquoi dans "no_candidates_reason" (en français, ex: "Aucun candidat disponible à Paris dans le budget de 80€"). Ne force jamais un mauvais match.
+   - Sinon, "no_candidates_reason" doit être une chaîne vide "".
+2. Classe les 5 meilleurs candidats ÉLIGIBLES par adéquation (rank 1 = meilleur). Privilégie la même ville, l'expérience pertinente, les langues utiles, et la disponibilité.
+3. Pour CHAQUE candidat retenu, calcule un tarif juste avec la formule:
    suggested_rate = base_rate × exp_multiplier × urgency_multiplier
    - exp_multiplier: 1.0 (<1 an), 1.15 (1-3 ans), 1.3 (3 ans et +)
    - urgency_multiplier: 1.3 (<24h), 1.15 (24-72h), 1.0 (>72h)
    Arrondis à l'euro le plus proche.
-3. Rédige une "rationale" d'1-2 phrases en français expliquant pourquoi ce candidat convient.
-4. Donne un "confidence_score" entre 0 et 1.
-5. Rédige "pricing_summary": un court paragraphe expliquant la logique tarifaire (multiplicateurs appliqués).
-6. Rédige "mission_brief_fr": un résumé propre et professionnel de la mission, prêt à envoyer au client.
+4. Rédige une "rationale" d'1-2 phrases en français expliquant pourquoi ce candidat convient.
+5. Donne un "confidence_score" entre 0 et 1.
+6. Rédige "pricing_summary": un court paragraphe expliquant la logique tarifaire (multiplicateurs appliqués).
+7. Rédige "mission_brief_fr": un résumé propre et professionnel de la mission, prêt à envoyer au client.
 
 Utilise exactement les "id" fournis comme candidate_id.`;
 }
@@ -154,7 +163,12 @@ function sanitize(
         confidence_score: clamp01(s.confidence_score),
       };
     });
-  return { ...result, shortlist };
+  const no_candidates_reason =
+    shortlist.length === 0
+      ? result.no_candidates_reason ||
+        "Aucun candidat éligible n'a été trouvé pour cette mission."
+      : "";
+  return { ...result, shortlist, no_candidates_reason };
 }
 
 function clamp01(n: number): number {
@@ -168,11 +182,28 @@ function mockAgent(brief: JobBrief, candidates: Candidate[]): AgentResult {
   const hours = hoursUntilMission(brief.mission_date, brief.start_time);
   const urgency = urgencyBand(hours);
 
-  const scored = candidates
+  // Eligibility gate: must be available and not blow far past the budget.
+  const budgetCeiling = brief.max_budget_per_person * 1.2;
+  const eligible = candidates.filter((c) => {
+    if (c.availability_status !== "available") return false;
+    if (computeRate(c, hours) > budgetCeiling) return false;
+    return true;
+  });
+
+  if (eligible.length === 0) {
+    return {
+      shortlist: [],
+      pricing_summary: "",
+      mission_brief_fr: buildBrief(brief),
+      no_candidates_reason: buildNoCandidatesReason(brief, candidates, hours),
+    };
+  }
+
+  const scored = eligible
     .map((c) => {
       let score = 0;
       if (c.city.toLowerCase() === brief.city.trim().toLowerCase()) score += 3;
-      if (c.availability_status === "available") score += 2;
+      score += 2; // available (guaranteed by the eligibility gate)
       score += Math.min(c.years_experience, 6) * 0.4;
       const rate = computeRate(c, hours);
       if (rate <= brief.max_budget_per_person) score += 2;
@@ -205,10 +236,35 @@ function mockAgent(brief: JobBrief, candidates: Candidate[]): AgentResult {
     `Urgence de la mission: ${urgency} (×${urgencyMultiplier(hours)}). ` +
     `Les candidats expérimentés (${expBand(3)}) reçoivent ×1.3, les profils 1-3 ans ×1.15, et les débutants ×1.0.`;
 
-  const mission_brief_fr =
+  return {
+    shortlist,
+    pricing_summary,
+    mission_brief_fr: buildBrief(brief),
+    no_candidates_reason: "",
+  };
+}
+
+function buildBrief(brief: JobBrief): string {
+  return (
     `Mission ${ROLE_LABELS_FR[brief.role_type]} — ${brief.people_needed} personne(s) recherchée(s) le ${brief.mission_date} ` +
     `de ${brief.start_time} à ${brief.end_time} à ${brief.city}. ` +
-    `Budget cible: ${brief.max_budget_per_person}€/personne/jour. ${brief.description}`.trim();
+    `Budget cible: ${brief.max_budget_per_person}€/personne/jour. ${brief.description}`
+  ).trim();
+}
 
-  return { shortlist, pricing_summary, mission_brief_fr };
+/** Explains, in French, why nobody was eligible — based on what filtered them out. */
+function buildNoCandidatesReason(
+  brief: JobBrief,
+  candidates: Candidate[],
+  hours: number,
+): string {
+  const available = candidates.filter((c) => c.availability_status === "available");
+  if (available.length === 0) {
+    return `Aucun ${ROLE_LABELS_FR[brief.role_type].toLowerCase()} n'est disponible pour le ${brief.mission_date}.`;
+  }
+  const cheapest = Math.min(...available.map((c) => computeRate(c, hours)));
+  if (cheapest > brief.max_budget_per_person * 1.2) {
+    return `Aucun candidat disponible ne rentre dans le budget de ${brief.max_budget_per_person}€/jour à ${brief.city} (tarif minimum disponible: ${cheapest}€). Augmentez le budget ou la flexibilité.`;
+  }
+  return `Aucun candidat éligible pour ${ROLE_LABELS_FR[brief.role_type]} à ${brief.city} le ${brief.mission_date}.`;
 }

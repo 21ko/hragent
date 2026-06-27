@@ -3,7 +3,8 @@ export type RoleType = "hostess" | "security" | "event_staff";
 export type MissionStatus =
   | "pending_outreach"
   | "awaiting_replies"
-  | "complete";
+  | "complete"
+  | "no_candidates";
 
 export type WhatsappStatus =
   | "pending"
@@ -11,6 +12,17 @@ export type WhatsappStatus =
   | "replied_yes"
   | "replied_no"
   | "failed";
+
+/** Phone-call outreach state (the agent calls before falling back to WhatsApp). */
+export type CallStatus =
+  | "pending" // not attempted yet
+  | "calling" // dial in progress
+  | "answered" // candidate picked up and answered the HR questions
+  | "no_answer" // rang out / busy -> WhatsApp fallback
+  | "failed"; // could not place the call -> WhatsApp fallback
+
+/** How the agent ultimately reached (or tried to reach) the candidate. */
+export type OutreachChannel = "call" | "whatsapp" | null;
 
 export interface Candidate {
   id: string;
@@ -39,6 +51,7 @@ export interface Mission {
   status: MissionStatus;
   pricing_summary: string | null;
   mission_brief_fr: string | null;
+  no_candidates_reason: string | null;
   created_at: string;
 }
 
@@ -50,6 +63,9 @@ export interface MissionCandidate {
   rationale: string;
   suggested_rate: number;
   confidence_score: number;
+  call_status: CallStatus;
+  call_notes: string | null;
+  outreach_channel: OutreachChannel;
   whatsapp_status: WhatsappStatus;
   twilio_sid: string | null;
   updated_at: string;
@@ -74,6 +90,8 @@ export interface AgentResult {
   shortlist: AgentShortlistItem[];
   pricing_summary: string;
   mission_brief_fr: string;
+  /** Set when the agent finds nobody eligible; shortlist is then empty. */
+  no_candidates_reason: string | null;
 }
 
 /** Payload submitted by the intake form. */
