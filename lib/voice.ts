@@ -1,13 +1,12 @@
 import type { Candidate, Mission } from "./types";
 import { roleLabel } from "./types";
+import { getTwilioClient, hasTwilioCredentials } from "./twilio-client";
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_CALLER_NUMBER = process.env.TWILIO_CALLER_NUMBER; // a voice-capable number
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL; // e.g. https://abc.ngrok.io
 
 export const usingTwilioVoice = Boolean(
-  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_CALLER_NUMBER && PUBLIC_BASE_URL,
+  hasTwilioCredentials && TWILIO_CALLER_NUMBER && PUBLIC_BASE_URL,
 );
 
 /**
@@ -67,8 +66,7 @@ export async function callCandidate(
   }
 
   try {
-    const twilio = (await import("twilio")).default;
-    const client = twilio(TWILIO_ACCOUNT_SID!, TWILIO_AUTH_TOKEN!);
+    const client = await getTwilioClient();
     const call = await client.calls.create({
       from: TWILIO_CALLER_NUMBER!,
       to: candidate.phone,

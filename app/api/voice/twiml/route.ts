@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { extractCallbackParams, twimlResponse } from "@/lib/api-helpers";
 import { getMission } from "@/lib/db";
 import { hrQuestions } from "@/lib/voice";
 
@@ -16,9 +16,7 @@ export async function GET(req: Request) {
 }
 
 async function twiml(req: Request) {
-  const url = new URL(req.url);
-  const missionId = url.searchParams.get("missionId") || "";
-  const candidateId = url.searchParams.get("candidateId") || "";
+  const { missionId, candidateId } = extractCallbackParams(req);
   const mission = await getMission(missionId);
 
   const questions = mission
@@ -30,19 +28,14 @@ async function twiml(req: Request) {
     .map((q) => `<Say language="fr-FR" voice="Polly.Lea">${escapeXml(q)}</Say>`)
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  return twimlResponse(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" language="fr-FR" speechTimeout="auto" action="${action}" method="POST">
     ${says}
     <Say language="fr-FR" voice="Polly.Lea">Répondez après le bip.</Say>
   </Gather>
   <Say language="fr-FR" voice="Polly.Lea">Nous n'avons pas reçu de réponse. Nous vous enverrons les détails par WhatsApp. Au revoir.</Say>
-</Response>`;
-
-  return new NextResponse(xml, {
-    status: 200,
-    headers: { "Content-Type": "text/xml" },
-  });
+</Response>`);
 }
 
 function escapeXml(s: string): string {

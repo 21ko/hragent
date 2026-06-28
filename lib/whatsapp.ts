@@ -1,12 +1,11 @@
 import type { Candidate, Mission } from "./types";
 import { roleLabel } from "./types";
+import { getTwilioClient, hasTwilioCredentials } from "./twilio-client";
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER;
 
 export const usingTwilio = Boolean(
-  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_NUMBER,
+  hasTwilioCredentials && TWILIO_WHATSAPP_NUMBER,
 );
 
 export function buildMessage(
@@ -42,9 +41,7 @@ export async function sendWhatsApp(
   }
 
   try {
-    // Lazy import so the dependency isn't required when running on mock.
-    const twilio = (await import("twilio")).default;
-    const client = twilio(TWILIO_ACCOUNT_SID!, TWILIO_AUTH_TOKEN!);
+    const client = await getTwilioClient();
     const msg = await client.messages.create({
       from: prefixWhatsapp(TWILIO_WHATSAPP_NUMBER!),
       to: prefixWhatsapp(candidate.phone),

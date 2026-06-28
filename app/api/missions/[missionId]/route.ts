@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getMission, getMissionEvents, getShortlist } from "@/lib/db";
-import { isCandidateTerminal } from "@/lib/mission-progress";
+import { notFound } from "@/lib/api-helpers";
+import { fetchMissionData } from "@/lib/mission-data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,20 +9,14 @@ export async function GET(
   _req: Request,
   { params }: { params: { missionId: string } },
 ) {
-  const mission = await getMission(params.missionId);
-  if (!mission) {
-    return NextResponse.json({ error: "Mission introuvable." }, { status: 404 });
-  }
-  const [shortlist, events] = await Promise.all([
-    getShortlist(params.missionId),
-    getMissionEvents(params.missionId),
-  ]);
-  const resolved = shortlist.filter(isCandidateTerminal).length;
-  const complete = mission.status === "complete";
+  const data = await fetchMissionData(params.missionId);
+  if (!data) return notFound("Mission introuvable.");
+
+  const { mission, shortlist, events, progress } = data;
   return NextResponse.json({
     mission,
-    progress: { resolved, total: shortlist.length, complete },
-    shortlist: complete
+    progress,
+    shortlist: progress.complete
       ? shortlist
       : shortlist.map((entry) => ({
           id: entry.id,

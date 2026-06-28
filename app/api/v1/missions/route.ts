@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { JobBrief } from "@/lib/types";
 import { checkApiKey } from "@/lib/auth";
+import { badRequest, parseJsonBody, unauthorized } from "@/lib/api-helpers";
 import { runMission, validateBrief } from "@/lib/run-mission";
 import { listMissions } from "@/lib/db";
 
@@ -12,19 +13,15 @@ export const dynamic = "force-dynamic";
  * mission id, status, and (when found) how many candidates were shortlisted.
  */
 export async function POST(req: Request) {
-  if (!checkApiKey(req)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-  let brief: JobBrief;
-  try {
-    brief = (await req.json()) as JobBrief;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
-  }
-  const invalid = validateBrief(brief);
-  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
+  if (!checkApiKey(req)) return unauthorized();
 
-  const result = await runMission(brief);
+  const parsed = await parseJsonBody<JobBrief>(req);
+  if (parsed instanceof NextResponse) return parsed;
+
+  const invalid = validateBrief(parsed);
+  if (invalid) return badRequest(invalid);
+
+  const result = await runMission(parsed);
   return NextResponse.json({
     mission_id: result.missionId,
     status: result.status,
@@ -36,9 +33,7 @@ export async function POST(req: Request) {
 
 /** GET /api/v1/missions — list all missions. */
 export async function GET(req: Request) {
-  if (!checkApiKey(req)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  if (!checkApiKey(req)) return unauthorized();
   const missions = await listMissions();
   return NextResponse.json({ missions });
 }

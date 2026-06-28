@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { RoleType } from "@/lib/types";
 import { checkApiKey } from "@/lib/auth";
+import { badRequest, unauthorized } from "@/lib/api-helpers";
 import { getCandidatesByRole } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -10,16 +11,11 @@ export const dynamic = "force-dynamic";
  * Agent-facing tool: read the available candidate pool for a role.
  */
 export async function GET(req: Request) {
-  if (!checkApiKey(req)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  if (!checkApiKey(req)) return unauthorized();
+
   const role = new URL(req.url).searchParams.get("role") as RoleType | null;
-  if (!role?.trim()) {
-    return NextResponse.json(
-      { error: "Query param `role` required." },
-      { status: 400 },
-    );
-  }
+  if (!role?.trim()) return badRequest("Query param `role` required.");
+
   const candidates = await getCandidatesByRole(role);
   return NextResponse.json({
     candidates: candidates.map((c) => ({

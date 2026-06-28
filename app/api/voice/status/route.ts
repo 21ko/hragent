@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addMissionEvent, updateMissionCandidate } from "@/lib/db";
+import { extractCallbackParams } from "@/lib/api-helpers";
 import { whatsappFallback } from "@/lib/outreach";
 import { reconcileMissionProgress } from "@/lib/mission-progress";
 
@@ -10,9 +11,7 @@ export const dynamic = "force-dynamic";
  * (no-answer / busy / failed), mark it and trigger the WhatsApp fallback.
  */
 export async function POST(req: Request) {
-  const url = new URL(req.url);
-  const missionId = url.searchParams.get("missionId") || "";
-  const candidateId = url.searchParams.get("candidateId") || "";
+  const { missionId, candidateId } = extractCallbackParams(req);
 
   const form = new URLSearchParams(await req.text());
   const callStatus = (form.get("CallStatus") || "").toString();
