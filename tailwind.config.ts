@@ -8,18 +8,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0A0A0A",
-        accent: "#0F62FE",
-        "accent-dark": "#0043CE",
-        muted: "#6B7280",
-        line: "#E7E7E9",
-        surface: "#FAFAFA",
+        ink: "#14201A",
+        accent: "#0E8F57",
+        "accent-dark": "#0B7A4A",
+        "accent-hover": "#0B7A4A",
+        "accent-tint": "#E9F4EE",
+        muted: "#65726B",
+        line: "#E6E6DF",
+        paper: "#FAFAF7",
+        surface: "#FFFFFF",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)",
+        card: "0 1px 3px rgba(20,32,26,0.08)",
+        intake: "0 12px 40px -12px rgba(20,32,26,0.18)",
       },
     },
   },

@@ -1,12 +1,27 @@
 import type { Metadata } from "next";
+import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { LangProvider } from "@/lib/i18n";
-import SiteNav from "@/components/SiteNav";
+import AppShell from "@/components/AppShell";
 import "./globals.css";
+
+const sans = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Staffly — Agence d'intérim pilotée par IA",
   description:
-    "Décrivez votre besoin, l'agent IA shortliste, tarifie et contacte les candidats par WhatsApp.",
+    "Décrivez votre besoin, l'agent IA shortliste, tarifie, appelle puis relance les candidats par WhatsApp.",
 };
 
 export default function RootLayout({
@@ -15,14 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${sans.variable} ${mono.variable}`}>
       <body className="font-sans">
         <LangProvider>
-          <SiteNav />
-          <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
-          <footer className="mx-auto max-w-5xl px-6 py-10 text-xs text-muted">
-            Staffly — hackathon demo. AI agent · phone + WhatsApp outreach.
-          </footer>
+          <AppShell>{children}</AppShell>
         </LangProvider>
       </body>
     </html>

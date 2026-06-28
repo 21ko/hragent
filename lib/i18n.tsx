@@ -10,7 +10,12 @@ import {
 export type Lang = "fr" | "en";
 
 interface Dict {
-  nav: { new: string; dashboard: string; developers: string };
+  nav: {
+    new: string;
+    dashboard: string;
+    candidates: string;
+    developers: string;
+  };
   roles: Record<string, string>;
   missionStatus: Record<string, string>;
   callStatus: Record<string, string>;
@@ -59,12 +64,51 @@ interface Dict {
     working: string[];
   };
   dashboard: { title: string; newMission: string; loading: string; empty: string; emptyCta: string };
+  landing: {
+    navLinks: string[];
+    navCta: string;
+    heroTitle: string;
+    heroLead: string;
+    heroLeadStrong: string;
+    heroLeadTail: string;
+    ctaCompany: string;
+    ctaWorker: string;
+    audience: string;
+    intakeTitle: string;
+    stepOf: (n: number) => string;
+    fProfile: string;
+    fProfileOptions: string[];
+    fCount: string;
+    fDate: string;
+    fLocation: string;
+    fContinue: string;
+    step2Title: string;
+    fBudget: string;
+    fStart: string;
+    fEnd: string;
+    fDescription: string;
+    fBack: string;
+    fLaunch: string;
+    fLaunching: string;
+    intakeFootnote: string;
+    trust: string;
+    stats: { value: string; label: string }[];
+    stepsEyebrow: string;
+    stepsTitle: string;
+    steps: { n: string; title: string; body: string }[];
+    ctaBandTitle: string;
+    ctaBandSubtitle: string;
+    ctaBandButton: string;
+    footerTagline: string;
+    footerLinks: string[];
+  };
 }
 
 const FR: Dict = {
   nav: {
     new: "Nouvelle mission",
     dashboard: "Tableau de bord",
+    candidates: "Candidats",
     developers: "Développeurs",
   },
   roles: {
@@ -156,10 +200,79 @@ const FR: Dict = {
     empty: "Aucune mission pour l'instant.",
     emptyCta: "Créez-en une.",
   },
+  landing: {
+    navLinks: ["Fonctionnement", "Profils", "Tarifs", "Connexion"],
+    navCta: "Lancer une mission",
+    heroTitle: "Votre équipe événementielle, staffée en moins d'une minute.",
+    heroLead:
+      "Décrivez votre mission. Notre agent sélectionne les meilleurs profils, calcule un tarif juste, les ",
+    heroLeadStrong: "appelle pour un court entretien RH",
+    heroLeadTail: " et bascule sur WhatsApp s'ils ne répondent pas.",
+    ctaCompany: "Je suis une entreprise",
+    ctaWorker: "Je cherche une mission",
+    audience: "Hôtes·ses · Agents de sécurité · Équipes événementielles",
+    intakeTitle: "Nouvelle mission",
+    stepOf: (n) => `Étape ${n}/2`,
+    fProfile: "Type de profil",
+    fProfileOptions: [
+      "Hôte·sse d'accueil",
+      "Agent de sécurité",
+      "Équipe événementielle",
+    ],
+    fCount: "Nombre",
+    fDate: "Date",
+    fLocation: "Lieu",
+    fContinue: "Continuer",
+    step2Title: "Détails de la mission",
+    fBudget: "Budget max (€ / pers. / jour)",
+    fStart: "Début",
+    fEnd: "Fin",
+    fDescription: "Description de l'événement",
+    fBack: "Retour",
+    fLaunch: "Lancer la mission",
+    fLaunching: "L'agent travaille…",
+    intakeFootnote: "Tarif estimé en temps réel · Aucun engagement",
+    trust: "Ils orchestrent leurs événements avec Staffly",
+    stats: [
+      { value: "< 60s", label: "pour constituer une shortlist complète" },
+      { value: "15+", label: "profils qualifiés proposés par mission" },
+      { value: "92%", label: "de taux de réponse — appel + WhatsApp" },
+    ],
+    stepsEyebrow: "Comment l'agent travaille",
+    stepsTitle: "Du brief à la réservation, sans friction.",
+    steps: [
+      {
+        n: "01",
+        title: "Décrivez votre besoin",
+        body: "Type de profil, date, lieu, nombre. En une phrase libre ou via le formulaire guidé.",
+      },
+      {
+        n: "02",
+        title: "Appel & tarif juste",
+        body: "L'agent classe les profils, calcule un tarif équitable, puis les appelle pour un court entretien RH.",
+      },
+      {
+        n: "03",
+        title: "Relance WhatsApp",
+        body: "Sans réponse à l'appel, l'agent bascule automatiquement sur WhatsApp. Vous suivez tout en direct.",
+      },
+    ],
+    ctaBandTitle: "Prêt à staffer votre prochain événement ?",
+    ctaBandSubtitle:
+      "Lancez votre première mission en moins d'une minute. Sans engagement.",
+    ctaBandButton: "Lancer une mission",
+    footerTagline: "© 2026 — Staffing événementiel par IA",
+    footerLinks: ["Mentions légales", "Confidentialité", "Contact"],
+  },
 };
 
 const EN: Dict = {
-  nav: { new: "New mission", dashboard: "Dashboard", developers: "Developers" },
+  nav: {
+    new: "New mission",
+    dashboard: "Dashboard",
+    candidates: "Candidates",
+    developers: "Developers",
+  },
   roles: {
     hostess: "Host / Hostess",
     security: "Security guard",
@@ -247,6 +360,65 @@ const EN: Dict = {
     loading: "Loading…",
     empty: "No missions yet.",
     emptyCta: "Create one.",
+  },
+  landing: {
+    navLinks: ["How it works", "Profiles", "Pricing", "Log in"],
+    navCta: "Start a mission",
+    heroTitle: "Your event team, staffed in under a minute.",
+    heroLead:
+      "Describe your mission. Our agent picks the best profiles, computes a fair rate, ",
+    heroLeadStrong: "calls them for a short HR interview",
+    heroLeadTail: " and switches to WhatsApp if they don't answer.",
+    ctaCompany: "I'm a company",
+    ctaWorker: "I'm looking for work",
+    audience: "Hosts · Security guards · Event crews",
+    intakeTitle: "New mission",
+    stepOf: (n) => `Step ${n}/2`,
+    fProfile: "Profile type",
+    fProfileOptions: ["Host / Hostess", "Security guard", "Event crew"],
+    fCount: "Count",
+    fDate: "Date",
+    fLocation: "Location",
+    fContinue: "Continue",
+    step2Title: "Mission details",
+    fBudget: "Max budget (€ / person / day)",
+    fStart: "Start",
+    fEnd: "End",
+    fDescription: "Event description",
+    fBack: "Back",
+    fLaunch: "Launch the mission",
+    fLaunching: "Agent is working…",
+    intakeFootnote: "Live estimated rate · No commitment",
+    trust: "They orchestrate their events with Staffly",
+    stats: [
+      { value: "< 60s", label: "to build a full shortlist" },
+      { value: "15+", label: "qualified profiles per mission" },
+      { value: "92%", label: "response rate — call + WhatsApp" },
+    ],
+    stepsEyebrow: "How the agent works",
+    stepsTitle: "From brief to booking, friction-free.",
+    steps: [
+      {
+        n: "01",
+        title: "Describe your need",
+        body: "Profile type, date, location, count. In one free sentence or via the guided form.",
+      },
+      {
+        n: "02",
+        title: "Call & fair rate",
+        body: "The agent ranks profiles, computes a fair rate, then calls them for a short HR interview.",
+      },
+      {
+        n: "03",
+        title: "WhatsApp follow-up",
+        body: "No answer on the call? The agent automatically switches to WhatsApp. You track it all live.",
+      },
+    ],
+    ctaBandTitle: "Ready to staff your next event?",
+    ctaBandSubtitle: "Launch your first mission in under a minute. No commitment.",
+    ctaBandButton: "Start a mission",
+    footerTagline: "© 2026 — AI event staffing",
+    footerLinks: ["Legal", "Privacy", "Contact"],
   },
 };
 

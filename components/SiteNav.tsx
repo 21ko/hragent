@@ -7,22 +7,23 @@ export default function SiteNav() {
   const { lang, setLang, t } = useI18n();
 
   return (
-    <header className="sticky top-0 z-10 border-b border-line bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-line bg-paper/85 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-sm font-bold text-white">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-base font-extrabold text-white">
             S
           </span>
-          <span className="text-[15px] font-semibold tracking-tight">
-            Staffly
-          </span>
+          <span className="text-[19px] font-bold tracking-tight">Staffly</span>
         </Link>
-        <nav className="flex items-center gap-6 text-sm text-muted">
+        <nav className="flex items-center gap-6 text-sm font-medium text-muted">
           <Link href="/" className="hover:text-ink">
             {t.nav.new}
           </Link>
           <Link href="/dashboard" className="hover:text-ink">
             {t.nav.dashboard}
+          </Link>
+          <Link href="/candidates" className="hover:text-ink">
+            {t.nav.candidates}
           </Link>
           <Link href="/developers" className="hover:text-ink">
             {t.nav.developers}
@@ -47,8 +48,8 @@ function LangToggle({
         <button
           key={l}
           onClick={() => setLang(l)}
-          className={`px-2.5 py-1 font-medium uppercase transition ${
-            lang === l ? "bg-ink text-white" : "text-muted hover:text-ink"
+          className={`px-2.5 py-1 font-mono font-medium uppercase transition ${
+            lang === l ? "bg-accent text-white" : "text-muted hover:text-ink"
           }`}
         >
           {l}
