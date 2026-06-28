@@ -39,6 +39,7 @@ export async function GET(
       years_experience: e.candidate.years_experience,
       suggested_rate: e.suggested_rate,
       confidence_score: e.confidence_score,
+      fit: e.fit,
       rationale: e.rationale,
       call_status: e.call_status,
       whatsapp_status: e.whatsapp_status,

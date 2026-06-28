@@ -68,6 +68,61 @@ export async function getCandidateByPhone(
   );
 }
 
+export async function listCandidates(): Promise<Candidate[]> {
+  if (usingSupabase) {
+    const { data, error } = await sb()
+      .from("candidates")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Candidate[];
+  }
+  return [...store().candidates].sort((a, b) =>
+    String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+  );
+}
+
+export async function insertCandidates(
+  candidates: Array<Omit<Candidate, "id" | "created_at">>,
+): Promise<{ inserted: number; updated: number }> {
+  let inserted = 0;
+  let updated = 0;
+
+  for (const candidate of candidates) {
+    const existing = await getCandidateByPhone(candidate.phone);
+    if (usingSupabase) {
+      if (existing) {
+        const { error } = await sb()
+          .from("candidates")
+          .update(candidate)
+          .eq("id", existing.id);
+        if (error) throw error;
+        updated += 1;
+      } else {
+        const { error } = await sb().from("candidates").insert(candidate);
+        if (error) throw error;
+        inserted += 1;
+      }
+      continue;
+    }
+
+    if (existing) {
+      Object.assign(existing, candidate);
+      updated += 1;
+    } else {
+      store().candidates.unshift({
+        ...candidate,
+        id: randomUUID(),
+        created_at: new Date().toISOString(),
+      });
+      inserted += 1;
+    }
+  }
+
+  if (!usingSupabase && candidates.length) persistStore();
+  return { inserted, updated };
+}
+
 // ---------- Missions ----------
 
 export async function createMission(

@@ -52,3 +52,11 @@ export function computeRate(
     urgencyMultiplier(hours);
   return Math.round(raw);
 }
+
+export function baseRateForRole(role: string): number {
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "hostess" || /h[oô]te|accueil/.test(normalized)) return 120;
+  if (normalized === "security" || /s[ée]curit[ée]|guard/.test(normalized)) return 160;
+  if (normalized === "event_staff" || /[ée]v[ée]nement|event/.test(normalized)) return 130;
+  return 150;
+}

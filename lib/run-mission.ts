@@ -91,6 +91,7 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
       rationale: s.rationale,
       suggested_rate: s.suggested_rate,
       confidence_score: s.confidence_score,
+      fit: s.fit,
       call_status: "pending",
       call_notes: null,
       outreach_channel: null,

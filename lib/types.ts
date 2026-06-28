@@ -38,6 +38,30 @@ export interface Candidate {
   created_at?: string;
 }
 
+export interface CandidateProfile {
+  name: string;
+  phone?: string;
+  role_type: RoleType;
+  years_experience: number;
+  city: string;
+  languages: string[];
+  day_rate?: number | null;
+  notes?: string;
+  confidence?: number;
+  work_history?: Array<{
+    title: string;
+    company: string;
+    period: string;
+    summary: string;
+  }>;
+  skills?: string[];
+  education?: Array<{
+    institution: string;
+    qualification: string;
+    year: string;
+  }>;
+}
+
 export interface Mission {
   id: string;
   role_type: RoleType;
@@ -63,12 +87,21 @@ export interface MissionCandidate {
   rationale: string;
   suggested_rate: number;
   confidence_score: number;
+  fit: FitBreakdown;
   call_status: CallStatus;
   call_notes: string | null;
   outreach_channel: OutreachChannel;
   whatsapp_status: WhatsappStatus;
   twilio_sid: string | null;
   updated_at: string;
+}
+
+export interface FitBreakdown {
+  role_match: number;
+  experience: number;
+  location: number;
+  language: number;
+  availability: number;
 }
 
 /** A row joined with its candidate, used by the results page. */
@@ -93,6 +126,7 @@ export interface AgentShortlistItem {
   rationale: string;
   suggested_rate: number;
   confidence_score: number;
+  fit: FitBreakdown;
 }
 
 export interface AgentResult {

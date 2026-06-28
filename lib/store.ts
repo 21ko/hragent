@@ -48,7 +48,19 @@ function loadLocalDB(): LocalDB {
         Array.isArray(parsed.missionsCandidates) &&
         Array.isArray(parsed.missionEvents)
       ) {
-        return parsed as LocalDB;
+        return {
+          ...parsed,
+          missionsCandidates: parsed.missionsCandidates.map((entry) => ({
+            ...entry,
+            fit: entry.fit ?? {
+              role_match: 0,
+              experience: 0,
+              location: 0,
+              language: 0,
+              availability: 0,
+            },
+          })),
+        } as LocalDB;
       }
       console.warn("[local-db] Invalid shape; starting with a fresh database.");
     } catch (error) {

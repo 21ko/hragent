@@ -102,6 +102,7 @@ create table if not exists missions_candidates (
   rationale        text,
   suggested_rate   integer not null,
   confidence_score numeric,
+  fit              jsonb not null default '{"role_match":0,"experience":0,"location":0,"language":0,"availability":0}'::jsonb,
   call_status      call_status not null default 'pending',
   call_notes       text,
   outreach_channel text,
@@ -114,6 +115,8 @@ create table if not exists missions_candidates (
 alter table missions_candidates add column if not exists call_status call_status not null default 'pending';
 alter table missions_candidates add column if not exists call_notes text;
 alter table missions_candidates add column if not exists outreach_channel text;
+alter table missions_candidates add column if not exists fit jsonb
+  not null default '{"role_match":0,"experience":0,"location":0,"language":0,"availability":0}'::jsonb;
 
 create index if not exists mc_mission_idx on missions_candidates (mission_id);
 create unique index if not exists mc_mission_candidate_idx

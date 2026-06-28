@@ -425,6 +425,7 @@ function CandidateCard({
       <p className="mt-3 flex-1 text-sm leading-relaxed text-ink">
         {entry.rationale}
       </p>
+      <FitBars fit={entry.fit} />
 
       {reachedByPhone && (
         <div className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700">
@@ -477,6 +478,44 @@ function CandidateCard({
           </SimBtn>
         </div>
       )}
+    </div>
+  );
+}
+
+function FitBars({ fit }: { fit: ShortlistEntry["fit"] | undefined }) {
+  const values = fit ?? {
+    role_match: 0,
+    experience: 0,
+    location: 0,
+    language: 0,
+    availability: 0,
+  };
+  const rows: Array<[keyof typeof values, string]> = [
+    ["role_match", "Rôle"],
+    ["experience", "Expérience"],
+    ["location", "Localisation"],
+    ["language", "Langues"],
+    ["availability", "Disponibilité"],
+  ];
+  return (
+    <div className="mt-4 space-y-1.5 border-t border-line pt-4">
+      {rows.map(([key, label]) => {
+        const value = Math.max(0, Math.min(1, values[key]));
+        return (
+          <div key={key} className="grid grid-cols-[82px_1fr_30px] items-center gap-2">
+            <span className="text-[10px] text-muted">{label}</span>
+            <span className="h-1.5 overflow-hidden rounded-full bg-surface">
+              <span
+                className="block h-full rounded-full bg-accent"
+                style={{ width: `${Math.round(value * 100)}%` }}
+              />
+            </span>
+            <span className="text-right font-mono text-[10px] text-muted">
+              {Math.round(value * 100)}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
