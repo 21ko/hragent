@@ -329,7 +329,7 @@ export function computeTrustedFit(
     normalize(candidate.city) === normalize(brief.city) ? 1 : 0.35;
 
   const requiredLanguages = inferRequiredLanguages(brief.description);
-  const candidateLanguages = candidate.languages.map(normalize);
+  const candidateLanguages = (candidate.languages ?? []).map(normalize);
   const language =
     requiredLanguages.length === 0
       ? 1
@@ -374,6 +374,7 @@ function meaningfulTokens(text: string): string[] {
 }
 
 function normalize(text: string): string {
+  if (!text) return "";
   return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
