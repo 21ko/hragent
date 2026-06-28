@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentResult, Candidate, JobBrief } from "./types";
-import { ROLE_LABELS_FR } from "./types";
+import { roleLabel } from "./types";
 import {
   computeRate,
   expBand,
@@ -65,7 +65,7 @@ function buildPrompt(brief: JobBrief, candidates: Candidate[]): string {
   return `Tu es un agent de recrutement intérimaire. Voici une demande de mission d'un client, et une liste de candidats disponibles pour ce type de poste.
 
 # Demande de mission
-- Poste: ${ROLE_LABELS_FR[brief.role_type]} (${brief.role_type})
+- Poste: ${roleLabel(brief.role_type)} (${brief.role_type})
 - Nombre de personnes: ${brief.people_needed}
 - Date: ${brief.mission_date} de ${brief.start_time} à ${brief.end_time}
 - Ville: ${brief.city}
@@ -246,7 +246,7 @@ function mockAgent(brief: JobBrief, candidates: Candidate[]): AgentResult {
 
 function buildBrief(brief: JobBrief): string {
   return (
-    `Mission ${ROLE_LABELS_FR[brief.role_type]} — ${brief.people_needed} personne(s) recherchée(s) le ${brief.mission_date} ` +
+    `Mission ${roleLabel(brief.role_type)} — ${brief.people_needed} personne(s) recherchée(s) le ${brief.mission_date} ` +
     `de ${brief.start_time} à ${brief.end_time} à ${brief.city}. ` +
     `Budget cible: ${brief.max_budget_per_person}€/personne/jour. ${brief.description}`
   ).trim();
@@ -260,11 +260,11 @@ function buildNoCandidatesReason(
 ): string {
   const available = candidates.filter((c) => c.availability_status === "available");
   if (available.length === 0) {
-    return `Aucun ${ROLE_LABELS_FR[brief.role_type].toLowerCase()} n'est disponible pour le ${brief.mission_date}.`;
+    return `Aucun profil pour ${roleLabel(brief.role_type).toLowerCase()} n'est disponible le ${brief.mission_date}.`;
   }
   const cheapest = Math.min(...available.map((c) => computeRate(c, hours)));
   if (cheapest > brief.max_budget_per_person * 1.2) {
     return `Aucun candidat disponible ne rentre dans le budget de ${brief.max_budget_per_person}€/jour à ${brief.city} (tarif minimum disponible: ${cheapest}€). Augmentez le budget ou la flexibilité.`;
   }
-  return `Aucun candidat éligible pour ${ROLE_LABELS_FR[brief.role_type]} à ${brief.city} le ${brief.mission_date}.`;
+  return `Aucun candidat éligible pour ${roleLabel(brief.role_type)} à ${brief.city} le ${brief.mission_date}.`;
 }

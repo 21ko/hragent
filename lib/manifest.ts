@@ -10,8 +10,9 @@ const briefSchema = {
   properties: {
     role_type: {
       type: "string",
-      enum: ["hostess", "security", "event_staff"],
-      description: "The kind of staff needed.",
+      minLength: 1,
+      maxLength: 100,
+      description: "The role to recruit for, written in free text.",
     },
     people_needed: { type: "integer", description: "How many people." },
     mission_date: { type: "string", description: "Mission date, YYYY-MM-DD." },
@@ -65,7 +66,7 @@ export const TOOLS: ToolDef[] = [
       properties: {
         role: {
           type: "string",
-          enum: ["hostess", "security", "event_staff"],
+          description: "Any role name. Exact matches are preferred.",
         },
       },
       required: ["role"],

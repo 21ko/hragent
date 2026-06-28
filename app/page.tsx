@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { RoleType } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
-
-const ROLE_ORDER: RoleType[] = ["hostess", "security", "event_staff"];
 
 function defaultDate() {
   const d = new Date();
@@ -20,7 +17,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    role_type: "hostess" as RoleType,
+    role_type: "Hôte / Hôtesse événementiel",
     people_needed: 3,
     mission_date: defaultDate(),
     start_time: "18:00",
@@ -83,22 +80,15 @@ export default function HomePage() {
       <form onSubmit={onSubmit} className="card space-y-5">
         <div>
           <label className="field-label">{t.home.role}</label>
-          <div className="grid grid-cols-3 gap-2">
-            {ROLE_ORDER.map((role) => (
-              <button
-                type="button"
-                key={role}
-                onClick={() => set("role_type", role)}
-                className={`rounded-lg border px-2 py-2.5 text-xs font-medium transition ${
-                  form.role_type === role
-                    ? "border-accent bg-accent/5 text-accent"
-                    : "border-line text-muted hover:border-ink/30"
-                }`}
-              >
-                {t.roles[role]}
-              </button>
-            ))}
-          </div>
+          <input
+            type="text"
+            required
+            maxLength={100}
+            className="field-input"
+            placeholder="Ex. Hôte événementiel, développeur, chef de projet…"
+            value={form.role_type}
+            onChange={(e) => set("role_type", e.target.value)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

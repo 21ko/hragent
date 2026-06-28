@@ -1,4 +1,4 @@
-export type RoleType = "hostess" | "security" | "event_staff";
+export type RoleType = string;
 
 export type MissionStatus =
   | "pending_outreach"
@@ -115,8 +115,12 @@ export interface JobBrief {
   description: string;
 }
 
-export const ROLE_LABELS_FR: Record<RoleType, string> = {
+export const ROLE_LABELS_FR: Record<string, string> = {
   hostess: "Hôtesse",
   security: "Agent de sécurité",
   event_staff: "Staff événementiel",
 };
+
+export function roleLabel(role: string): string {
+  return ROLE_LABELS_FR[role] ?? role.trim();
+}

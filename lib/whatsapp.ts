@@ -1,5 +1,5 @@
 import type { Candidate, Mission } from "./types";
-import { ROLE_LABELS_FR } from "./types";
+import { roleLabel } from "./types";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -14,7 +14,7 @@ export function buildMessage(
   mission: Mission,
   rate: number,
 ): string {
-  const role = ROLE_LABELS_FR[mission.role_type];
+  const role = roleLabel(mission.role_type);
   return `Bonjour ${candidate.name} 👋 Mission disponible : ${role} le ${mission.mission_date} à ${mission.city}, ${rate}€/jour. Disponible ? Répondez OUI ou NON`;
 }
 

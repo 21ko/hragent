@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { RoleType } from "@/lib/types";
 import { checkApiKey } from "@/lib/auth";
 import { getCandidatesByRole } from "@/lib/db";
-import { VALID_ROLES } from "@/lib/run-mission";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +14,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
   const role = new URL(req.url).searchParams.get("role") as RoleType | null;
-  if (!role || !VALID_ROLES.includes(role)) {
+  if (!role?.trim()) {
     return NextResponse.json(
-      { error: "Query param `role` required (hostess | security | event_staff)." },
+      { error: "Query param `role` required." },
       { status: 400 },
     );
   }

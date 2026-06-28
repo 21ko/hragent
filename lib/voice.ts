@@ -1,5 +1,5 @@
-import type { Candidate, Mission, RoleType } from "./types";
-import { ROLE_LABELS_FR } from "./types";
+import type { Candidate, Mission } from "./types";
+import { roleLabel } from "./types";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -17,10 +17,10 @@ export const usingTwilioVoice = Boolean(
 export function hrQuestions(mission: Mission): string[] {
   const base = [
     `Bonjour, c'est l'agent de recrutement Staffly. Confirmez-vous votre disponibilité pour une mission le ${mission.mission_date} à ${mission.city} ?`,
-    `Avez-vous déjà travaillé sur ce type d'événement, ${ROLE_LABELS_FR[mission.role_type]} ?`,
+    `Avez-vous déjà travaillé comme ${roleLabel(mission.role_type)} ?`,
     `Pouvez-vous être présent à ${mission.start_time ?? "l'heure prévue"} sur place ?`,
   ];
-  const roleSpecific: Record<RoleType, string | null> = {
+  const roleSpecific: Record<string, string | null> = {
     security: "Votre carte professionnelle de sécurité est-elle à jour ?",
     hostess: "Êtes-vous à l'aise pour un accueil en anglais si nécessaire ?",
     event_staff: "Êtes-vous à l'aise avec de la manutention et de longues stations debout ?",

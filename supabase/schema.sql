@@ -29,7 +29,7 @@ create table if not exists candidates (
   id                  uuid primary key default gen_random_uuid(),
   name                text not null,
   phone               text not null,               -- E.164, e.g. +33612345678
-  role_type           role_type not null,
+  role_type           text not null,
   years_experience    numeric not null default 0,
   day_rate            integer not null,            -- base day rate in EUR (pre-multiplier)
   city                text not null,
@@ -45,7 +45,7 @@ create index if not exists candidates_phone_idx on candidates (phone);
 -- ---------- missions ----------
 create table if not exists missions (
   id                    uuid primary key default gen_random_uuid(),
-  role_type             role_type not null,
+  role_type             text not null,
   people_needed         integer not null default 1,
   mission_date          date not null,
   start_time            time,
@@ -62,6 +62,34 @@ create table if not exists missions (
 
 -- Idempotent add for pre-existing missions tables.
 alter table missions add column if not exists no_candidates_reason text;
+
+-- Migrate older installations from the closed role enum to free text.
+-- This preserves existing values while allowing any user-entered role.
+do $$ begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'candidates'
+      and column_name = 'role_type'
+      and udt_name = 'role_type'
+  ) then
+    alter table candidates
+      alter column role_type type text using role_type::text;
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'missions'
+      and column_name = 'role_type'
+      and udt_name = 'role_type'
+  ) then
+    alter table missions
+      alter column role_type type text using role_type::text;
+  end if;
+end $$;
 
 create index if not exists missions_created_idx on missions (created_at desc);
 

@@ -7,13 +7,11 @@ import {
   useEffect,
   useState,
 } from "react";
-import type { RoleType } from "./types";
-
 export type Lang = "fr" | "en";
 
 interface Dict {
   nav: { new: string; dashboard: string; developers: string };
-  roles: Record<RoleType, string>;
+  roles: Record<string, string>;
   missionStatus: Record<string, string>;
   callStatus: Record<string, string>;
   whatsappStatus: Record<string, string>;

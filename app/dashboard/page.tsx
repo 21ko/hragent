@@ -54,7 +54,9 @@ export default function DashboardPage() {
           >
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-medium">{t.roles[m.role_type]}</span>
+                <span className="font-medium">
+                  {t.roles[m.role_type] ?? m.role_type}
+                </span>
                 <span className="text-muted">·</span>
                 <span className="text-sm text-muted">
                   {m.people_needed} · {m.city}

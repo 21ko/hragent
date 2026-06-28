@@ -1,5 +1,5 @@
-import type { JobBrief, Mission, MissionCandidate, RoleType } from "./types";
-import { ROLE_LABELS_FR } from "./types";
+import type { JobBrief, Mission, MissionCandidate } from "./types";
+import { roleLabel } from "./types";
 import {
   addMissionEvent,
   createMission,
@@ -12,8 +12,6 @@ import { runAgent } from "./agent";
 import { sendWhatsApp } from "./whatsapp";
 import { callCandidate } from "./voice";
 import { reconcileMissionProgress } from "./mission-progress";
-
-export const VALID_ROLES: RoleType[] = ["hostess", "security", "event_staff"];
 
 export interface RunMissionResult {
   missionId: string;
@@ -28,6 +26,7 @@ export interface RunMissionResult {
  * AgentEvent so the autonomy is provable / inspectable.
  */
 export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
+  brief = { ...brief, role_type: brief.role_type.trim() };
   // 1) candidates for this role
   const candidates = await getCandidatesByRole(brief.role_type);
 
@@ -54,12 +53,12 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
   await addMissionEvent(
     mission.id,
     "brief_parsed",
-    `Brief reçu: ${ROLE_LABELS_FR[brief.role_type]} × ${brief.people_needed} à ${brief.city} le ${brief.mission_date}.`,
+    `Brief reçu: ${roleLabel(brief.role_type)} × ${brief.people_needed} à ${brief.city} le ${brief.mission_date}.`,
   );
   await addMissionEvent(
     mission.id,
     "candidates_fetched",
-    `${candidates.length} candidat(s) ${ROLE_LABELS_FR[brief.role_type].toLowerCase()} dans la base.`,
+    `${candidates.length} candidat(s) évalué(s) pour ${roleLabel(brief.role_type).toLowerCase()}.`,
   );
 
   // No eligible candidates: stop here with a recorded reason.
@@ -173,8 +172,9 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
 }
 
 export function validateBrief(brief: Partial<JobBrief>): string | null {
-  if (!brief.role_type || !VALID_ROLES.includes(brief.role_type)) {
-    return "role_type invalide (hostess | security | event_staff).";
+  if (!brief.role_type?.trim()) return "role_type requis.";
+  if (brief.role_type.trim().length > 100) {
+    return "role_type trop long (100 caractères maximum).";
   }
   if (!brief.mission_date) return "mission_date requis (YYYY-MM-DD).";
   if (!brief.city) return "city requis.";

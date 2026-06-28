@@ -115,7 +115,7 @@ export default function ResultsPage({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <span className="badge bg-accent/10 text-accent">
-                {t.roles[mission.role_type]}
+                {t.roles[mission.role_type] ?? mission.role_type}
               </span>
               <h1 className="mt-3 text-2xl font-semibold tracking-tight">
                 {mission.people_needed} {t.results.people} · {mission.city}

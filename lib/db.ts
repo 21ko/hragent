@@ -35,9 +35,18 @@ export async function getCandidatesByRole(role: RoleType): Promise<Candidate[]> 
       .select("*")
       .eq("role_type", role);
     if (error) throw error;
-    return (data ?? []) as Candidate[];
+    if (data?.length) return data as Candidate[];
+    const { data: pool, error: poolError } = await sb()
+      .from("candidates")
+      .select("*")
+      .eq("availability_status", "available");
+    if (poolError) throw poolError;
+    return (pool ?? []) as Candidate[];
   }
-  return store().candidates.filter((c) => c.role_type === role);
+  const exact = store().candidates.filter((c) => c.role_type === role);
+  return exact.length
+    ? exact
+    : store().candidates.filter((c) => c.availability_status === "available");
 }
 
 export async function getCandidateByPhone(
