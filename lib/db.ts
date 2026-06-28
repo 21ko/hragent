@@ -137,7 +137,7 @@ export async function createMission(
   } as Mission;
 
   if (usingSupabase) {
-    const { id, created_at, ...insert } = row;
+    const { id: _id, created_at: _created_at, ...insert } = row;
     const { data, error } = await sb()
       .from("missions")
       .insert(insert)
@@ -204,7 +204,7 @@ export async function insertMissionCandidates(
   }));
   if (usingSupabase) {
     const { error } = await sb().from("missions_candidates").insert(
-      stamped.map(({ id, ...rest }) => rest),
+      stamped.map(({ id: _id, ...rest }) => rest),
     );
     if (error) throw error;
     return;
@@ -312,7 +312,7 @@ export async function addMissionEvent(
     created_at: new Date().toISOString(),
   };
   if (usingSupabase) {
-    const { id, ...insert } = row;
+    const { id: _id, ...insert } = row;
     const { error } = await sb().from("mission_events").insert(insert);
     if (error) throw error;
     return;
