@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkApiKey } from "@/lib/auth";
 import { getMission, getMissionEvents, getShortlist } from "@/lib/db";
+import { isCandidateTerminal } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,13 @@ export async function GET(
     getMissionEvents(params.missionId),
   ]);
 
+  const resolved = shortlist.filter(isCandidateTerminal).length;
+  const complete = mission.status === "complete";
   return NextResponse.json({
     mission,
-    shortlist: shortlist.map((e) => ({
+    progress: { resolved, total: shortlist.length, complete },
+    results_sealed: !complete,
+    shortlist: complete ? shortlist.map((e) => ({
       rank: e.rank,
       name: e.candidate.name,
       city: e.candidate.city,
@@ -38,7 +43,7 @@ export async function GET(
       call_status: e.call_status,
       whatsapp_status: e.whatsapp_status,
       outreach_channel: e.outreach_channel,
-    })),
+    })) : [],
     trace: events.map((ev) => ({
       step: ev.step,
       detail: ev.detail,

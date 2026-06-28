@@ -7,8 +7,18 @@ import { useI18n } from "@/lib/i18n";
 
 interface Payload {
   mission: Mission;
-  shortlist: ShortlistEntry[];
+  shortlist: Array<ShortlistEntry | SealedEntry>;
   events: AgentEvent[];
+  progress: { resolved: number; total: number; complete: boolean };
+}
+
+interface SealedEntry {
+  id: string;
+  candidate_id: string;
+  rank: number;
+  call_status: ShortlistEntry["call_status"];
+  whatsapp_status: ShortlistEntry["whatsapp_status"];
+  outreach_channel: ShortlistEntry["outreach_channel"];
 }
 
 const STEP_ICON: Record<string, string> = {
@@ -64,18 +74,18 @@ export default function ResultsPage({
 
   if (!data) return <AgentWorking steps={t.results.working} />;
 
-  const { mission, shortlist, events } = data;
-  const top3 = shortlist.slice(0, 3);
+  const { mission, shortlist, events, progress } = data;
+  const revealed = progress.complete ? (shortlist as ShortlistEntry[]) : [];
 
   async function copyBrief() {
-    await navigator.clipboard.writeText(buildCopyText(mission, shortlist));
+    await navigator.clipboard.writeText(buildCopyText(mission, revealed));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   async function simulateCall(
     candidateId: string,
-    outcome: "answered" | "no_answer",
+    outcome: "answered" | "no_answer" | "replied_yes" | "replied_no",
   ) {
     await fetch("/api/voice/simulate", {
       method: "POST",
@@ -130,6 +140,14 @@ export default function ResultsPage({
       {/* Agent activity trace (proof of multi-step autonomy) */}
       {events.length > 0 && <AgentActivity events={events} title={t.results.activityTitle} />}
 
+      {mission.status !== "no_candidates" && (
+        <SealedProgress
+          entries={shortlist as SealedEntry[]}
+          progress={progress}
+          onOutcome={simulateCall}
+        />
+      )}
+
       {/* No eligible candidates */}
       {mission.status === "no_candidates" && (
         <div className="card border-amber-200 bg-amber-50/40 text-center">
@@ -149,13 +167,13 @@ export default function ResultsPage({
       )}
 
       {/* Candidate cards */}
-      {top3.length > 0 && (
+      {revealed.length > 0 && (
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
-            {t.results.outreachTitle}
+            Rapport final — {revealed.length} entretiens validés
           </h2>
           <div className="grid gap-4 md:grid-cols-3">
-            {top3.map((entry) => (
+            {revealed.map((entry) => (
               <CandidateCard
                 key={entry.id}
                 entry={entry}
@@ -164,13 +182,13 @@ export default function ResultsPage({
               />
             ))}
           </div>
-          {shortlist.length > 3 && (
+          {false && shortlist.length > 3 && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm text-muted hover:text-ink">
                 {t.results.seeOthers(shortlist.length - 3)}
               </summary>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                {shortlist.slice(3).map((e) => (
+                {(shortlist.slice(3) as ShortlistEntry[]).map((e) => (
                   <div
                     key={e.id}
                     className="flex items-center justify-between rounded-xl border border-line px-4 py-3 text-sm"
@@ -220,7 +238,7 @@ export default function ResultsPage({
       )}
 
       {/* Copy brief */}
-      {top3.length > 0 && (
+      {revealed.length > 0 && (
         <div className="flex justify-end">
           <button onClick={copyBrief} className="btn-primary">
             {copied ? t.results.copied : t.results.copy}
@@ -260,6 +278,116 @@ function AgentActivity({
           </li>
         ))}
       </ol>
+    </div>
+  );
+}
+
+function SealedProgress({
+  entries,
+  progress,
+  onOutcome,
+}: {
+  entries: SealedEntry[];
+  progress: { resolved: number; total: number; complete: boolean };
+  onOutcome: (
+    id: string,
+    outcome: "answered" | "no_answer" | "replied_yes" | "replied_no",
+  ) => void;
+}) {
+  if (progress.complete) {
+    return (
+      <div className="card border-green-200 bg-green-50/50">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
+              Cohorte terminée
+            </p>
+            <h2 className="mt-1 text-lg font-semibold">
+              {progress.resolved}/{progress.total} entretiens résolus
+            </h2>
+          </div>
+          <span className="badge bg-green-600 text-white">Résultats révélés</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card border-accent/20">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+            Résultats scellés
+          </p>
+          <h2 className="mt-1 text-lg font-semibold">
+            {progress.resolved}/{progress.total} entretiens résolus
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Identités, notes et classement seront révélés ensemble à la fin.
+          </p>
+        </div>
+        <span className="badge bg-blue-50 text-blue-700">Agent en cours</span>
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface">
+        <div
+          className="h-full rounded-full bg-accent transition-all"
+          style={{
+            width: `${progress.total ? (progress.resolved / progress.total) * 100 : 0}%`,
+          }}
+        />
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-5">
+        {entries.map((entry) => {
+          const resolved =
+            entry.call_status === "answered" ||
+            ["replied_yes", "replied_no", "failed"].includes(
+              entry.whatsapp_status,
+            );
+          const waitingWhatsApp = entry.whatsapp_status === "sent";
+          return (
+            <div
+              key={entry.id}
+              className="rounded-xl border border-line bg-white p-3 text-center"
+            >
+              <p className="text-xs font-medium text-muted">
+                Entretien {entry.rank}
+              </p>
+              <p className={`mt-1 text-xs font-semibold ${resolved ? "text-green-600" : "text-amber-600"}`}>
+                {resolved ? "Résolu ✓" : waitingWhatsApp ? "WhatsApp envoyé" : "En cours"}
+              </p>
+              {!resolved && (
+                <div className="mt-2 flex gap-1">
+                  <button
+                    onClick={() =>
+                      onOutcome(
+                        entry.candidate_id,
+                        waitingWhatsApp ? "replied_yes" : "answered",
+                      )
+                    }
+                    className="flex-1 rounded-md bg-green-50 py-1 text-[10px] font-semibold text-green-700"
+                  >
+                    OUI
+                  </button>
+                  <button
+                    onClick={() =>
+                      onOutcome(
+                        entry.candidate_id,
+                        waitingWhatsApp ? "replied_no" : "no_answer",
+                      )
+                    }
+                    className="flex-1 rounded-md bg-red-50 py-1 text-[10px] font-semibold text-red-700"
+                  >
+                    {waitingWhatsApp ? "NON" : "Échec"}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-center text-[11px] text-muted">
+        Contrôles de résultat visibles uniquement en mode démonstration.
+      </p>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { runAgent } from "./agent";
 import { sendWhatsApp } from "./whatsapp";
 import { callCandidate } from "./voice";
+import { reconcileMissionProgress } from "./mission-progress";
 
 export const VALID_ROLES: RoleType[] = ["hostess", "security", "event_staff"];
 
@@ -101,9 +102,9 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
 
   // 5) outreach: CALL first, fall back to WhatsApp on no answer
   const byId = new Map(candidates.map((c) => [c.id, c]));
-  const top3 = result.shortlist.slice(0, 3);
+  const interviewCohort = result.shortlist.slice(0, 5);
   await Promise.all(
-    top3.map(async (s, idx) => {
+    interviewCohort.map(async (s, idx) => {
       const candidate = byId.get(s.candidate_id);
       if (!candidate) return;
 
@@ -113,6 +114,7 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
         call_notes: call.notes,
         outreach_channel: call.status === "answered" ? "call" : null,
         whatsapp_status: call.status === "answered" ? "replied_yes" : "pending",
+        twilio_sid: call.sid || null,
       });
 
       if (call.status === "answered") {
@@ -120,6 +122,15 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
           mission.id,
           "call_answered",
           `${candidate.name} a répondu à l'appel et passé le screen RH.`,
+        );
+        return;
+      }
+
+      if (call.status === "calling") {
+        await addMissionEvent(
+          mission.id,
+          "call_started",
+          `Appel de ${candidate.name} lancé — résultat en attente du callback.`,
         );
         return;
       }
@@ -151,6 +162,7 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
     "awaiting_replies",
     "Outreach terminé — en attente des réponses.",
   );
+  await reconcileMissionProgress(mission.id);
 
   return {
     missionId: mission.id,

@@ -45,7 +45,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: "get_mission",
     description:
-      "Read a mission's status, the priced shortlist with per-candidate outreach state (call/WhatsApp), and the full agent activity trace.",
+      "Read mission progress and the agent trace. Candidate identities, rates, and ranking remain sealed until all interviews reach a terminal outcome.",
     input_schema: {
       type: "object",
       additionalProperties: false,

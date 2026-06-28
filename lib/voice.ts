@@ -30,7 +30,7 @@ export function hrQuestions(mission: Mission): string[] {
 }
 
 export interface CallResult {
-  status: "answered" | "no_answer" | "failed";
+  status: "calling" | "answered" | "no_answer" | "failed";
   sid: string;
   notes: string | null;
 }
@@ -77,11 +77,9 @@ export async function callCandidate(
       statusCallbackEvent: ["completed", "no-answer", "busy", "failed"],
       timeout: 20,
     });
-    // The real answered/no-answer outcome arrives via the status callback;
-    // we return "calling" semantics as "no_answer" placeholder so the caller
-    // can decide fallback timing. Here we mark it pending-ish via "no_answer"
-    // only if the call could not connect synchronously.
-    return { status: "answered", sid: call.sid, notes: null };
+    // Twilio accepting the request does not mean the candidate answered.
+    // The answer/status callbacks own the terminal transition.
+    return { status: "calling", sid: call.sid, notes: null };
   } catch (err) {
     console.error(`[voice] call failed for ${candidate.phone}:`, err);
     return { status: "failed", sid: "", notes: null };

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMission, getMissionEvents, getShortlist } from "@/lib/db";
+import { isCandidateTerminal } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -16,5 +17,21 @@ export async function GET(
     getShortlist(params.missionId),
     getMissionEvents(params.missionId),
   ]);
-  return NextResponse.json({ mission, shortlist, events });
+  const resolved = shortlist.filter(isCandidateTerminal).length;
+  const complete = mission.status === "complete";
+  return NextResponse.json({
+    mission,
+    progress: { resolved, total: shortlist.length, complete },
+    shortlist: complete
+      ? shortlist
+      : shortlist.map((entry) => ({
+          id: entry.id,
+          candidate_id: entry.candidate_id,
+          rank: entry.rank,
+          call_status: entry.call_status,
+          whatsapp_status: entry.whatsapp_status,
+          outreach_channel: entry.outreach_channel,
+        })),
+    events,
+  });
 }

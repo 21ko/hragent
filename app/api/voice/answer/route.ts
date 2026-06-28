@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { updateMissionCandidate } from "@/lib/db";
+import { addMissionEvent, updateMissionCandidate } from "@/lib/db";
+import { reconcileMissionProgress } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +16,22 @@ export async function POST(req: Request) {
   const form = new URLSearchParams(await req.text());
   const speech = (form.get("SpeechResult") || "").toString().trim();
 
-  if (missionId && candidateId) {
+  if (missionId && candidateId && speech) {
     await updateMissionCandidate(missionId, candidateId, {
       call_status: "answered",
       call_notes: speech || "Réponse reçue par téléphone.",
       outreach_channel: "call",
       whatsapp_status: "replied_yes",
+    });
+    await addMissionEvent(
+      missionId,
+      "call_answered",
+      "Entretien téléphonique reçu et validé.",
+    );
+    await reconcileMissionProgress(missionId);
+  } else if (missionId && candidateId) {
+    await updateMissionCandidate(missionId, candidateId, {
+      call_status: "no_answer",
     });
   }
 

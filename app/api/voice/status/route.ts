@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { updateMissionCandidate } from "@/lib/db";
+import { addMissionEvent, updateMissionCandidate } from "@/lib/db";
 import { whatsappFallback } from "@/lib/outreach";
+import { reconcileMissionProgress } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,12 @@ export async function POST(req: Request) {
       call_status: "no_answer",
     });
     await whatsappFallback(missionId, candidateId);
+    await addMissionEvent(
+      missionId,
+      "call_no_answer",
+      `Appel ${callStatus} — fallback WhatsApp déclenché.`,
+    );
+    await reconcileMissionProgress(missionId);
   }
 
   return NextResponse.json({ ok: true });

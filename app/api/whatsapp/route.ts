@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { updateWhatsappStatusByPhone } from "@/lib/db";
+import { addMissionEvent, updateWhatsappStatusByPhone } from "@/lib/db";
 import type { WhatsappStatus } from "@/lib/types";
+import { reconcileMissionProgress } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,17 @@ export async function POST(req: Request) {
   const status = classifyReply(body);
   if (from && status) {
     try {
-      await updateWhatsappStatusByPhone(from, status);
+      const updated = await updateWhatsappStatusByPhone(from, status);
+      if (updated) {
+        await addMissionEvent(
+          updated.mission_id,
+          status,
+          status === "replied_yes"
+            ? "Disponibilité confirmée par WhatsApp."
+            : "Mission déclinée par WhatsApp.",
+        );
+        await reconcileMissionProgress(updated.mission_id);
+      }
     } catch (err) {
       console.error("[whatsapp webhook] update failed:", err);
     }
