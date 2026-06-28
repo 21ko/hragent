@@ -21,7 +21,15 @@ interface ImportResult {
 }
 
 export async function POST(req: Request) {
-  const form = await req.formData();
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid multipart form data." },
+      { status: 400 },
+    );
+  }
   const files = form
     .getAll("files")
     .filter((value): value is File => value instanceof File)
