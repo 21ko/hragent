@@ -5,12 +5,23 @@ import { reconcileMissionProgress } from "@/lib/mission-progress";
 
 export const dynamic = "force-dynamic";
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production" &&
+  !process.env.STAFFLY_ENABLE_SIMULATE;
+
 /**
  * Demo helper for the results page: simulate a phone-screen outcome without a
  * real call. `outcome: "answered"` marks the candidate reached by phone;
  * `outcome: "no_answer"` triggers the WhatsApp fallback.
+ *
+ * Disabled in production unless STAFFLY_ENABLE_SIMULATE is set.
  */
 export async function POST(req: Request) {
+  if (IS_PRODUCTION) {
+    return NextResponse.json(
+      { error: "Simulation endpoint is disabled in production." },
+      { status: 403 },
+    );
+  }
   const body = (await req.json().catch(() => ({}))) as {
     missionId?: string;
     candidateId?: string;

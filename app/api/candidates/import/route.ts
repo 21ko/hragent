@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { detectKind, extractCvText, looksScanned } from "@/lib/cv-extract";
 import { parseAndValidateCv, parseScannedPdf } from "@/lib/cv-parser";
 import { insertCandidates } from "@/lib/db";
+import { checkAdminKey } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ interface ImportResult {
 }
 
 export async function POST(req: Request) {
+  if (!checkAdminKey(req)) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const form = await req.formData();
   const files = form
     .getAll("files")

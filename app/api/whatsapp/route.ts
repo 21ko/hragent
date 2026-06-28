@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addMissionEvent, updateWhatsappStatusByPhone } from "@/lib/db";
 import type { WhatsappStatus } from "@/lib/types";
 import { reconcileMissionProgress } from "@/lib/mission-progress";
+import { validateTwilioSignature } from "@/lib/twilio-verify";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,13 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: Request) {
   const form = await parseBody(req);
+
+  if (!validateTwilioSignature(req, form)) {
+    return NextResponse.json(
+      { error: "Invalid Twilio signature." },
+      { status: 403 },
+    );
+  }
   const from = (form.get("From") || form.get("from") || "").toString();
   const body = (form.get("Body") || form.get("body") || "").toString();
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { addMissionEvent, updateMissionCandidate } from "@/lib/db";
 import { reconcileMissionProgress } from "@/lib/mission-progress";
+import { validateTwilioSignature } from "@/lib/twilio-verify";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,13 @@ export async function POST(req: Request) {
   const candidateId = url.searchParams.get("candidateId") || "";
 
   const form = new URLSearchParams(await req.text());
+
+  if (!validateTwilioSignature(req, form)) {
+    return NextResponse.json(
+      { error: "Invalid Twilio signature." },
+      { status: 403 },
+    );
+  }
   const speech = (form.get("SpeechResult") || "").toString().trim();
 
   if (missionId && candidateId && speech) {
