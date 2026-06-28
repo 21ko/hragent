@@ -16,21 +16,22 @@ export async function GET(req: Request) {
 }
 
 async function twiml(req: Request) {
-  const url = new URL(req.url);
-  const missionId = url.searchParams.get("missionId") || "";
-  const candidateId = url.searchParams.get("candidateId") || "";
-  const mission = await getMission(missionId);
+  try {
+    const url = new URL(req.url);
+    const missionId = url.searchParams.get("missionId") || "";
+    const candidateId = url.searchParams.get("candidateId") || "";
+    const mission = await getMission(missionId);
 
-  const questions = mission
-    ? hrQuestions(mission)
-    : ["Bonjour, merci de répondre à quelques questions."];
+    const questions = mission
+      ? hrQuestions(mission)
+      : ["Bonjour, merci de répondre à quelques questions."];
 
-  const action = `/api/voice/answer?missionId=${missionId}&candidateId=${candidateId}`;
-  const says = questions
-    .map((q) => `<Say language="fr-FR" voice="Polly.Lea">${escapeXml(q)}</Say>`)
-    .join("");
+    const action = `/api/voice/answer?missionId=${missionId}&candidateId=${candidateId}`;
+    const says = questions
+      .map((q) => `<Say language="fr-FR" voice="Polly.Lea">${escapeXml(q)}</Say>`)
+      .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" language="fr-FR" speechTimeout="auto" action="${action}" method="POST">
     ${says}
@@ -39,10 +40,21 @@ async function twiml(req: Request) {
   <Say language="fr-FR" voice="Polly.Lea">Nous n'avons pas reçu de réponse. Nous vous enverrons les détails par WhatsApp. Au revoir.</Say>
 </Response>`;
 
-  return new NextResponse(xml, {
-    status: 200,
-    headers: { "Content-Type": "text/xml" },
-  });
+    return new NextResponse(xml, {
+      status: 200,
+      headers: { "Content-Type": "text/xml" },
+    });
+  } catch (err) {
+    console.error("[voice/twiml] failed to generate TwiML:", err);
+    const fallback = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="fr-FR" voice="Polly.Lea">Une erreur est survenue. Nous vous enverrons les détails par WhatsApp. Au revoir.</Say>
+</Response>`;
+    return new NextResponse(fallback, {
+      status: 200,
+      headers: { "Content-Type": "text/xml" },
+    });
+  }
 }
 
 function escapeXml(s: string): string {

@@ -108,51 +108,63 @@ export async function runMission(brief: JobBrief): Promise<RunMissionResult> {
       const candidate = byId.get(s.candidate_id);
       if (!candidate) return;
 
-      const call = await callCandidate(candidate, mission, idx + 1);
-      await updateMissionCandidate(mission.id, s.candidate_id, {
-        call_status: call.status,
-        call_notes: call.notes,
-        outreach_channel: call.status === "answered" ? "call" : null,
-        whatsapp_status: call.status === "answered" ? "replied_yes" : "pending",
-        twilio_sid: call.sid || null,
-      });
+      try {
+        const call = await callCandidate(candidate, mission, idx + 1);
+        await updateMissionCandidate(mission.id, s.candidate_id, {
+          call_status: call.status,
+          call_notes: call.notes,
+          outreach_channel: call.status === "answered" ? "call" : null,
+          whatsapp_status: call.status === "answered" ? "replied_yes" : "pending",
+          twilio_sid: call.sid || null,
+        });
 
-      if (call.status === "answered") {
+        if (call.status === "answered") {
+          await addMissionEvent(
+            mission.id,
+            "call_answered",
+            `${candidate.name} a répondu à l'appel et passé le screen RH.`,
+          );
+          return;
+        }
+
+        if (call.status === "calling") {
+          await addMissionEvent(
+            mission.id,
+            "call_started",
+            `Appel de ${candidate.name} lancé — résultat en attente du callback.`,
+          );
+          return;
+        }
+
         await addMissionEvent(
           mission.id,
-          "call_answered",
-          `${candidate.name} a répondu à l'appel et passé le screen RH.`,
+          "call_no_answer",
+          `${candidate.name} n'a pas répondu — bascule WhatsApp.`,
         );
-        return;
-      }
-
-      if (call.status === "calling") {
+        const { sid, ok } = await sendWhatsApp(candidate, mission, s.suggested_rate);
+        await updateMissionCandidate(mission.id, s.candidate_id, {
+          twilio_sid: sid,
+          whatsapp_status: ok ? "sent" : "failed",
+          outreach_channel: ok ? "whatsapp" : null,
+        });
         await addMissionEvent(
           mission.id,
-          "call_started",
-          `Appel de ${candidate.name} lancé — résultat en attente du callback.`,
+          ok ? "whatsapp_sent" : "whatsapp_failed",
+          ok
+            ? `Message WhatsApp envoyé à ${candidate.name}.`
+            : `Échec de l'envoi WhatsApp à ${candidate.name}.`,
         );
-        return;
+      } catch (err) {
+        console.error(
+          `[run-mission] outreach failed for candidate ${candidate.name}:`,
+          err,
+        );
+        await addMissionEvent(
+          mission.id,
+          "outreach_error",
+          `Erreur lors du contact de ${candidate.name}.`,
+        ).catch(() => {});
       }
-
-      await addMissionEvent(
-        mission.id,
-        "call_no_answer",
-        `${candidate.name} n'a pas répondu — bascule WhatsApp.`,
-      );
-      const { sid, ok } = await sendWhatsApp(candidate, mission, s.suggested_rate);
-      await updateMissionCandidate(mission.id, s.candidate_id, {
-        twilio_sid: sid,
-        whatsapp_status: ok ? "sent" : "failed",
-        outreach_channel: ok ? "whatsapp" : null,
-      });
-      await addMissionEvent(
-        mission.id,
-        ok ? "whatsapp_sent" : "whatsapp_failed",
-        ok
-          ? `Message WhatsApp envoyé à ${candidate.name}.`
-          : `Échec de l'envoi WhatsApp à ${candidate.name}.`,
-      );
     }),
   );
 

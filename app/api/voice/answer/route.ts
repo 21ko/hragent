@@ -9,30 +9,34 @@ export const dynamic = "force-dynamic";
  * the candidate's answer and mark the call answered.
  */
 export async function POST(req: Request) {
-  const url = new URL(req.url);
-  const missionId = url.searchParams.get("missionId") || "";
-  const candidateId = url.searchParams.get("candidateId") || "";
+  try {
+    const url = new URL(req.url);
+    const missionId = url.searchParams.get("missionId") || "";
+    const candidateId = url.searchParams.get("candidateId") || "";
 
-  const form = new URLSearchParams(await req.text());
-  const speech = (form.get("SpeechResult") || "").toString().trim();
+    const form = new URLSearchParams(await req.text());
+    const speech = (form.get("SpeechResult") || "").toString().trim();
 
-  if (missionId && candidateId && speech) {
-    await updateMissionCandidate(missionId, candidateId, {
-      call_status: "answered",
-      call_notes: speech || "Réponse reçue par téléphone.",
-      outreach_channel: "call",
-      whatsapp_status: "replied_yes",
-    });
-    await addMissionEvent(
-      missionId,
-      "call_answered",
-      "Entretien téléphonique reçu et validé.",
-    );
-    await reconcileMissionProgress(missionId);
-  } else if (missionId && candidateId) {
-    await updateMissionCandidate(missionId, candidateId, {
-      call_status: "no_answer",
-    });
+    if (missionId && candidateId && speech) {
+      await updateMissionCandidate(missionId, candidateId, {
+        call_status: "answered",
+        call_notes: speech || "Réponse reçue par téléphone.",
+        outreach_channel: "call",
+        whatsapp_status: "replied_yes",
+      });
+      await addMissionEvent(
+        missionId,
+        "call_answered",
+        "Entretien téléphonique reçu et validé.",
+      );
+      await reconcileMissionProgress(missionId);
+    } else if (missionId && candidateId) {
+      await updateMissionCandidate(missionId, candidateId, {
+        call_status: "no_answer",
+      });
+    }
+  } catch (err) {
+    console.error("[voice/answer] callback processing failed:", err);
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

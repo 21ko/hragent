@@ -5,6 +5,14 @@ export const dynamic = "force-dynamic";
 
 /** Used by the dashboard to list every mission. */
 export async function GET() {
-  const missions = await listMissions();
-  return NextResponse.json({ missions });
+  try {
+    const missions = await listMissions();
+    return NextResponse.json({ missions });
+  } catch (err) {
+    console.error("[api/missions] listMissions failed:", err);
+    return NextResponse.json(
+      { error: "Erreur interne lors de la récupération des missions." },
+      { status: 500 },
+    );
+  }
 }

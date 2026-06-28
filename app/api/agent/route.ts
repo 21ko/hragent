@@ -17,6 +17,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: invalid }, { status: 400 });
   }
 
-  const result = await runMission(brief);
-  return NextResponse.json({ missionId: result.missionId });
+  try {
+    const result = await runMission(brief);
+    return NextResponse.json({ missionId: result.missionId });
+  } catch (err) {
+    console.error("[api/agent] runMission failed:", err);
+    return NextResponse.json(
+      { error: "Erreur interne lors du lancement de la mission." },
+      { status: 500 },
+    );
+  }
 }

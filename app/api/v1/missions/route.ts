@@ -24,14 +24,22 @@ export async function POST(req: Request) {
   const invalid = validateBrief(brief);
   if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
-  const result = await runMission(brief);
-  return NextResponse.json({
-    mission_id: result.missionId,
-    status: result.status,
-    shortlisted: result.shortlistCount,
-    no_candidates_reason: result.no_candidates_reason,
-    result_url: `/api/v1/missions/${result.missionId}`,
-  });
+  try {
+    const result = await runMission(brief);
+    return NextResponse.json({
+      mission_id: result.missionId,
+      status: result.status,
+      shortlisted: result.shortlistCount,
+      no_candidates_reason: result.no_candidates_reason,
+      result_url: `/api/v1/missions/${result.missionId}`,
+    });
+  } catch (err) {
+    console.error("[api/v1/missions] runMission failed:", err);
+    return NextResponse.json(
+      { error: "Internal error while running the mission." },
+      { status: 500 },
+    );
+  }
 }
 
 /** GET /api/v1/missions — list all missions. */
@@ -39,6 +47,14 @@ export async function GET(req: Request) {
   if (!checkApiKey(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
-  const missions = await listMissions();
-  return NextResponse.json({ missions });
+  try {
+    const missions = await listMissions();
+    return NextResponse.json({ missions });
+  } catch (err) {
+    console.error("[api/v1/missions] listMissions failed:", err);
+    return NextResponse.json(
+      { error: "Internal error while listing missions." },
+      { status: 500 },
+    );
+  }
 }
