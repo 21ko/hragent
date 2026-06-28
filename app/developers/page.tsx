@@ -1,193 +1,122 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
-type Tab = "openai" | "mcp" | "devin";
+type Tab = "openai" | "mcp" | "devin" | "voice";
 
-const endpoints = [
-  ["POST", "/api/v1/missions", "Créer une mission depuis un brief", "post"],
-  ["GET", "/api/v1/missions/:id", "Statut + shortlist de la mission", "get"],
-  ["GET", "/api/v1/candidates?role=", "Lister les candidats par rôle", "get"],
-  ["POST", "/api/voice/simulate", "Simuler un entretien téléphonique", "post"],
-  ["GET", "/api/v1/manifest", "Manifeste outils (OpenAI + MCP)", "get"],
-] as const;
+const code: Record<Tab, string> = {
+  openai: `{"type":"function","function":{"name":"staffly_create_mission","description":"Create and run a Staffly mission","parameters":{"type":"object","properties":{"role_type":{"type":"string"},"people_needed":{"type":"integer"},"city":{"type":"string"}},"required":["role_type","people_needed","city"]}}}`,
+  mcp: `{"mcpServers":{"staffly":{"command":"npx","args":["tsx","scripts/mcp-server.ts"],"env":{"STAFFLY_BASE_URL":"http://localhost:3000"}}}}`,
+  devin: `Use Staffly to interview five candidates.
+1. POST the mission to /api/v1/missions.
+2. Poll until all five interviews resolve.
+3. Keep individual replies sealed during execution.
+4. Return one ranked report when the cohort is complete.`,
+  voice: `POST /api/voice/simulate
+Content-Type: application/json
 
-const snippets: Record<Tab, string> = {
-  openai: `{
-  "type": "function",
-  "function": {
-    "name": "staffly_create_mission",
-    "description": "Crée une mission et lance l’agent.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "role_type": { "type": "string" },
-        "people_needed": { "type": "integer", "const": 5 },
-        "city": { "type": "string" },
-        "description": { "type": "string" }
-      },
-      "required": ["role_type", "people_needed", "city"]
-    }
-  }
-}`,
-  mcp: `{
-  "mcpServers": {
-    "staffly": {
-      "command": "npx",
-      "args": ["tsx", "scripts/mcp-server.ts"],
-      "env": {
-        "STAFFLY_BASE_URL": "http://localhost:3000"
-      }
-    }
-  }
-}`,
-  devin: `Use Staffly to interview five candidates for this brief.
-
-1. Create the mission with people_needed: 5.
-2. Validate availability, rate and role fit.
-3. Poll the mission until all five interviews resolve.
-4. Do not show individual candidate messages while the run is active.
-5. Return one ranked report only when the cohort is complete.`,
-};
-
-const curl = `curl -X POST http://localhost:3000/api/v1/missions \\
-  -H "Authorization: Bearer $STAFFLY_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "role_type": "event_staff",
-    "people_needed": 5,
-    "mission_date": "2026-07-02",
-    "city": "Paris",
-    "description": "Interview five people; reveal one final report"
-  }'`;
-
-export default function DevelopersPage() {
-  const [tab, setTab] = useState<Tab>("openai");
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(snippets[tab]);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
-  };
-
-  return (
-    <div className="fixed inset-0 z-20 flex overflow-hidden bg-[#FAFAF7] font-['Hanken_Grotesk',ui-sans-serif,system-ui] text-[#14201A]">
-      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-[#E6E6DF] bg-white px-4 py-5 md:flex">
-        <Link href="/" className="flex items-center gap-3 px-2 pb-6 pt-1">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#0E8F57] text-base font-extrabold text-white">S</span>
-          <span className="text-[19px] font-bold tracking-tight">Staffly</span>
-        </Link>
-        <nav className="space-y-1 text-[14.5px] font-medium text-[#65726B]">
-          <Nav href="/dashboard" label="Tableau de bord" />
-          <Nav href="/" label="Missions" />
-          <Nav href="/dashboard" label="Candidats" />
-          <Nav href="/dashboard" label="Transactions" />
-          <Nav href="/developers" label="Développeurs" active />
-        </nav>
-        <div className="mt-auto rounded-xl bg-[#E9F4EE] p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#0E8F57]">Agent-ready</p>
-          <p className="mt-2 text-sm leading-5 text-[#65726B]">REST, function calling et MCP dans une seule surface.</p>
-        </div>
-      </aside>
-
-      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="mx-auto w-full max-w-[860px] px-5 py-8 sm:px-10 sm:py-11">
-          <div className="mb-7 flex items-center justify-between md:hidden">
-            <Link href="/" className="flex items-center gap-2 font-bold">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#0E8F57] text-white">S</span>
-              Staffly
-            </Link>
-            <span className="rounded-full bg-[#E9F4EE] px-3 py-1 text-xs font-semibold text-[#0E8F57]">Developers</span>
-          </div>
-
-          <span className="inline-flex rounded-full border border-[#D6EBDE] bg-[#E9F4EE] px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-[.1em] text-[#0E8F57]">
-            API v1 · stable
-          </span>
-          <h1 className="mt-[18px] max-w-2xl text-[36px] font-extrabold leading-[1.05] tracking-[-.03em] sm:text-[38px]">
-            Staffly comme outil pour vos agents
-          </h1>
-          <p className="mt-3 max-w-[650px] text-[17px] leading-[1.55] text-[#65726B] sm:text-lg">
-            Une surface REST versionnée et un manifeste lisible par machine : laissez un agent externe créer une mission, valider cinq profils et piloter les entretiens jusqu’au rapport final.
-          </p>
-
-          <div className="mb-8 mt-7 grid gap-3 sm:grid-cols-2">
-            <Info label="Base URL" value="http://localhost:3000/api/v1" />
-            <Info label="Authentification" value="Authorization: Bearer ••••" />
-          </div>
-
-          <SectionTitle>Endpoints</SectionTitle>
-          <div className="mb-8 overflow-hidden rounded-[14px] border border-[#E6E6DF] bg-white">
-            {endpoints.map(([method, path, description, kind]) => (
-              <div key={path} className="grid gap-2 border-b border-[#F0F0EA] px-[18px] py-3.5 last:border-0 hover:bg-[#FBFBF9] sm:grid-cols-[48px_230px_1fr] sm:items-center sm:gap-3.5">
-                <span className={`w-12 rounded-md py-1 text-center font-mono text-[11px] font-semibold ${kind === "post" ? "bg-[#E9F4EE] text-[#0E8F57]" : "bg-[#F0F0EA] text-[#65726B]"}`}>
-                  {method}
-                </span>
-                <code className="overflow-x-auto text-[13px] font-semibold sm:text-[13.5px]">{path}</code>
-                <span className="text-[13.5px] text-[#65726B]">{description}</span>
-              </div>
-            ))}
-          </div>
-
-          <SectionTitle>Exemple — créer une mission</SectionTitle>
-          <CodePanel code={curl} className="mb-8" />
-
-          <div className="mb-3.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <SectionTitle className="mb-0">Manifeste outils</SectionTitle>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex overflow-hidden rounded-lg border border-[#E6E6DF] bg-white">
-                {(["openai", "mcp", "devin"] as Tab[]).map((item) => (
-                  <button key={item} onClick={() => { setTab(item); setCopied(false); }} className={`px-3 py-2 text-xs font-semibold capitalize transition ${tab === item ? "bg-[#14201A] text-white" : "text-[#65726B] hover:text-[#14201A]"}`}>
-                    {item === "openai" ? "OpenAI" : item === "mcp" ? "MCP" : "Devin"}
-                  </button>
-                ))}
-              </div>
-              <button onClick={copy} className="h-[34px] rounded-lg bg-[#0E8F57] px-3.5 text-xs font-semibold text-white transition hover:bg-[#0B7A4A]">
-                {copied ? "Copié ✓" : "Copier"}
-              </button>
-            </div>
-          </div>
-          <CodePanel code={snippets[tab]} />
-
-          <div className="mt-5 rounded-[14px] border border-[#D6EBDE] bg-[#E9F4EE] p-[18px]">
-            <p className="text-sm font-bold">Résultats scellés jusqu’à la fin</p>
-            <p className="mt-1.5 text-[13.5px] leading-5 text-[#65726B]">
-              Configurez l’orchestrateur pour attendre les cinq statuts terminaux. Les réponses individuelles restent masquées pendant l’exécution, puis un seul rapport validé est révélé.
-            </p>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+{
+  "missionId": "<mission-id>",
+  "candidateId": "<candidate-id>",
+  "outcome": "answered"
 }
 
-function Nav({ href, label, active = false }: { href: string; label: string; active?: boolean }) {
+# Use "no_answer" to test the automatic WhatsApp fallback.`,
+};
+
+export default function DevelopersPage() {
+  const { lang } = useI18n();
+  const fr = lang === "fr";
+  const [tab, setTab] = useState<Tab>("devin");
+  const [copied, setCopied] = useState(false);
+  const endpoints = [
+    ["POST", "/api/v1/missions", fr ? "Créer une mission" : "Create a mission"],
+    ["GET", "/api/v1/missions/:id", fr ? "Statut et shortlist" : "Status and shortlist"],
+    ["GET", "/api/v1/candidates?role=", fr ? "Lister les candidats" : "List candidates"],
+    ["POST", "/api/voice/simulate", fr ? "Tester la couche vocale" : "Test the voice layer"],
+    ["GET", "/api/v1/manifest", fr ? "Manifeste d’outils" : "Tool manifest"],
+  ];
+
+  async function copy() {
+    await navigator.clipboard.writeText(code[tab]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   return (
-    <Link href={href} className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 ${active ? "bg-[#E9F4EE] font-semibold text-[#14201A]" : "hover:bg-[#F3F3EE] hover:text-[#14201A]"}`}>
-      <span className={`h-2 w-2 rounded-[3px] ${active ? "bg-[#0E8F57]" : "border-[1.5px] border-[#C3C3BA]"}`} />
-      {label}
-    </Link>
+    <div className="mx-auto max-w-[900px]">
+      <span className="badge border border-accent/20 bg-accent-tint font-mono text-accent">API v1 · stable</span>
+      <h1 className="mt-5 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-[-.04em]">
+        {fr ? "Staffly comme outil pour vos agents" : "Staffly as a tool for your agents"}
+      </h1>
+      <p className="mt-4 max-w-2xl text-lg leading-7 text-muted">
+        {fr ? "Une couche d’orchestration pour les agents externes, reliée à un véritable agent vocal d’entretien." : "An orchestration layer for external agents, connected to a real voice interview agent."}
+      </p>
+
+      <div className="mt-7 grid gap-4 md:grid-cols-2">
+        <LayerCard
+          eyebrow="DEVIN LAYER"
+          title={fr ? "Orchestrateur externe" : "External orchestrator"}
+          body={fr ? "Devin crée la mission, surveille les cinq entretiens, gère les états terminaux et ne restitue qu’un rapport final scellé." : "Devin creates the mission, monitors five interviews, handles terminal states and returns only one sealed final report."}
+          steps={fr ? ["Créer via /v1", "Interroger le statut", "Récupérer le rapport"] : ["Create through /v1", "Poll mission status", "Retrieve final report"]}
+        />
+        <LayerCard
+          eyebrow="VOICE LAYER"
+          title={fr ? "Entretien vocal natif" : "Native voice screening"}
+          body={fr ? "Staffly appelle d’abord, collecte la réponse parlée via Twilio, puis bascule automatiquement sur WhatsApp en cas de silence ou d’échec." : "Staffly calls first, captures spoken answers through Twilio, then automatically falls back to WhatsApp after silence or failure."}
+          steps={fr ? ["Questions par rôle", "Transcription et statut", "Fallback WhatsApp"] : ["Role-aware questions", "Transcript and status", "WhatsApp fallback"]}
+        />
+      </div>
+
+      <div className="mt-7 grid gap-3 sm:grid-cols-2">
+        <Info label="Base URL" value="/api/v1" />
+        <Info label={fr ? "Mode local" : "Local mode"} value={fr ? "Mock vocal déterministe · aucune clé" : "Deterministic voice mock · no keys"} />
+      </div>
+
+      <h2 className="mb-3 mt-9 font-mono text-xs font-bold uppercase tracking-wider text-muted">Endpoints</h2>
+      <div className="overflow-hidden rounded-2xl border border-line bg-white">
+        {endpoints.map(([method, path, description]) => (
+          <div key={path} className="grid gap-2 border-b border-line px-5 py-4 last:border-0 sm:grid-cols-[55px_250px_1fr]">
+            <span className={`w-fit rounded-md px-2 py-1 font-mono text-[10px] font-bold ${method === "POST" ? "bg-accent-tint text-accent" : "bg-surface text-muted"}`}>{method}</span>
+            <code className="text-sm font-semibold">{path}</code>
+            <p className="text-sm text-muted">{description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-3 mt-9 flex items-center justify-between">
+        <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-muted">{fr ? "Intégrations agentiques" : "Agent integrations"}</h2>
+        <button onClick={copy} className="btn-primary py-2">{copied ? (fr ? "Copié ✓" : "Copied ✓") : (fr ? "Copier" : "Copy")}</button>
+      </div>
+      <div className="flex w-fit overflow-hidden rounded-t-xl border border-b-0 border-line">
+        {(["openai", "mcp", "devin", "voice"] as Tab[]).map(item => (
+          <button key={item} onClick={() => setTab(item)} className={`px-4 py-2 text-xs font-bold uppercase ${tab === item ? "bg-ink text-white" : "bg-white text-muted"}`}>{item}</button>
+        ))}
+      </div>
+      <pre className="overflow-x-auto rounded-b-2xl rounded-tr-2xl bg-ink p-6 font-mono text-xs leading-6 text-[#d8e6dd]"><code>{code[tab]}</code></pre>
+
+      <div className="mt-5 rounded-2xl border border-accent/20 bg-accent-tint p-5">
+        <p className="font-bold">{fr ? "Résultats scellés jusqu’à la fin" : "Results sealed until completion"}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">{fr ? "L’orchestrateur attend les cinq statuts terminaux. Le vocal gère les appels, puis WhatsApp récupère automatiquement les non-réponses." : "The orchestrator waits for five terminal states. Voice handles calls, then WhatsApp automatically recovers non-responses."}</p>
+      </div>
+    </div>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[13px] border border-[#E6E6DF] bg-white px-[18px] py-4">
-      <p className="mb-2 font-mono text-[10px] uppercase tracking-[.06em] text-[#65726B]">{label}</p>
-      <code className="break-all text-[13px] font-semibold sm:text-sm">{value}</code>
-    </div>
-  );
+  return <div className="card"><p className="font-mono text-[10px] uppercase tracking-wider text-muted">{label}</p><code className="mt-2 block break-all text-sm font-semibold">{value}</code></div>;
 }
 
-function SectionTitle({ children, className = "mb-3.5" }: { children: React.ReactNode; className?: string }) {
-  return <h2 className={`${className} font-mono text-[13px] font-bold uppercase tracking-[.06em] text-[#65726B] sm:text-[15px]`}>{children}</h2>;
-}
-
-function CodePanel({ code, className = "" }: { code: string; className?: string }) {
+function LayerCard({ eyebrow, title, body, steps }: { eyebrow: string; title: string; body: string; steps: string[] }) {
   return (
-    <pre className={`${className} overflow-x-auto rounded-[14px] bg-[#14201A] px-[22px] py-5 font-mono text-[12px] leading-[1.7] text-[#D8E6DD] sm:text-[13px]`}>
-      <code>{code}</code>
-    </pre>
+    <article className="rounded-2xl border border-line bg-white p-5">
+      <p className="font-mono text-[10px] font-bold tracking-[.12em] text-accent">{eyebrow}</p>
+      <h2 className="mt-2 text-lg font-bold">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {steps.map((step, index) => <span key={step} className="rounded-lg bg-surface px-2.5 py-1.5 text-[11px] font-semibold"><span className="mr-1 text-accent">{index + 1}</span>{step}</span>)}
+      </div>
+    </article>
   );
 }

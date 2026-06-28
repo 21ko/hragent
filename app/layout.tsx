@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { LangProvider } from "@/lib/i18n";
+import { SessionProvider } from "@/lib/session";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
@@ -33,7 +34,9 @@ export default function RootLayout({
     <html lang="fr" className={`${sans.variable} ${mono.variable}`}>
       <body className="font-sans">
         <LangProvider>
-          <AppShell>{children}</AppShell>
+          <SessionProvider>
+            <AppShell>{children}</AppShell>
+          </SessionProvider>
         </LangProvider>
       </body>
     </html>

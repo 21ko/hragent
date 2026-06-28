@@ -5,77 +5,52 @@ import Link from "next/link";
 import type { Mission } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 
-const STATUS_CLS: Record<string, string> = {
+const STATUS: Record<string, string> = {
   pending_outreach: "bg-surface text-muted",
-  awaiting_replies: "bg-blue-50 text-blue-600",
-  complete: "bg-green-50 text-green-600",
-  no_candidates: "bg-amber-50 text-amber-600",
+  awaiting_replies: "bg-blue-50 text-blue-700",
+  complete: "bg-green-50 text-green-700",
+  no_candidates: "bg-amber-50 text-amber-700",
 };
 
-export default function DashboardPage() {
-  const { t } = useI18n();
+export default function CompanyDashboardPage() {
+  const { t, lang } = useI18n();
+  const fr = lang === "fr";
   const [missions, setMissions] = useState<Mission[] | null>(null);
-
   useEffect(() => {
-    fetch("/api/missions", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setMissions(d.missions))
-      .catch(() => setMissions([]));
+    fetch("/api/missions", { cache: "no-store" }).then(response => response.json()).then(data => setMissions(data.missions ?? [])).catch(() => setMissions([]));
   }, []);
+
+  const active = missions?.filter(mission => mission.status !== "complete" && mission.status !== "no_candidates").length ?? 0;
+  const completed = missions?.filter(mission => mission.status === "complete").length ?? 0;
+  const people = missions?.reduce((sum, mission) => sum + mission.people_needed, 0) ?? 0;
+  const budget = missions?.reduce((sum, mission) => sum + mission.people_needed * mission.max_budget_per_person, 0) ?? 0;
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t.dashboard.title}
-        </h1>
-        <Link href="/" className="btn-primary">
-          {t.dashboard.newMission}
-        </Link>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div><p className="mono-label">{fr ? "Espace entreprise" : "Company workspace"}</p><h1 className="mt-2 text-3xl font-extrabold tracking-[-.03em]">{fr ? "Mes recrutements" : "My hiring"}</h1><p className="mt-2 text-sm text-muted">{fr ? "Créez une mission et suivez vos équipes jusqu’à la réservation." : "Post a mission and track your teams through booking."}</p></div>
+        <Link href="/missions/new" className="btn-primary">{t.dashboard.newMission}</Link>
       </div>
-
-      <div className="mt-6 space-y-3">
-        {missions === null && (
-          <div className="card text-sm text-muted">{t.dashboard.loading}</div>
-        )}
-        {missions?.length === 0 && (
-          <div className="card text-center text-sm text-muted">
-            {t.dashboard.empty}{" "}
-            <Link href="/" className="text-accent">
-              {t.dashboard.emptyCta}
-            </Link>
-          </div>
-        )}
-        {missions?.map((m) => (
-          <Link
-            key={m.id}
-            href={`/results/${m.id}`}
-            className="card flex items-center justify-between transition hover:border-ink/20"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">
-                  {t.roles[m.role_type] ?? m.role_type}
-                </span>
-                <span className="text-muted">·</span>
-                <span className="text-sm text-muted">
-                  {m.people_needed} · {m.city}
-                </span>
-              </div>
-              <div className="mt-1 text-sm text-muted">
-                {m.mission_date}
-                {m.start_time && ` · ${m.start_time}`}
-                {m.end_time && `–${m.end_time}`}
-              </div>
-            </div>
-            <span
-              className={`badge ${STATUS_CLS[m.status] ?? STATUS_CLS.pending_outreach}`}
-            >
-              {t.missionStatus[m.status] ?? m.status}
-            </span>
-          </Link>
-        ))}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label={fr ? "Missions en cours" : "Active missions"} value={String(active)} />
+        <Metric label={fr ? "Missions terminées" : "Completed missions"} value={String(completed)} />
+        <Metric label={fr ? "Personnes recherchées" : "People requested"} value={String(people)} />
+        <Metric label={fr ? "Budget engagé" : "Committed budget"} value={`${budget.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB")} €`} accent />
       </div>
+      <section className="mt-8 overflow-hidden rounded-2xl border border-line bg-white">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4"><div><h2 className="font-bold">{fr ? "Mes missions" : "My missions"}</h2><p className="mt-1 text-xs text-muted">{fr ? "Cliquez pour suivre l’agent en direct" : "Open one to watch the agent live"}</p></div><span className="text-xs text-muted">{missions?.length ?? 0} total</span></div>
+        {missions === null ? <p className="p-6 text-sm text-muted">{t.dashboard.loading}</p> : missions.length === 0 ? <p className="p-8 text-center text-sm text-muted">{t.dashboard.empty}</p> : (
+          <div className="divide-y divide-line">{missions.map(mission => <Link key={mission.id} href={`/results/${mission.id}`} className="grid gap-3 px-5 py-4 transition hover:bg-surface/60 md:grid-cols-[1.5fr_.8fr_.7fr_.8fr] md:items-center"><div><p className="font-semibold">{cleanRole(mission.role_type)}</p><p className="mt-1 text-xs text-muted">{mission.city} · {mission.people_needed} {fr ? "profils" : "profiles"}</p></div><p className="text-sm text-muted">{mission.mission_date}<br />{mission.start_time}{mission.end_time ? `–${mission.end_time}` : ""}</p><p className="text-sm font-semibold">{mission.max_budget_per_person} € / pers.</p><span className={`badge w-fit ${STATUS[mission.status]}`}>{t.missionStatus[mission.status]}</span></Link>)}</div>
+        )}
+      </section>
     </div>
   );
+}
+
+function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return <div className="card"><p className="text-xs font-medium text-muted">{label}</p><p className={`mt-3 text-3xl font-extrabold tracking-tight ${accent ? "text-accent" : ""}`}>{value}</p></div>;
+}
+
+function cleanRole(role: string) {
+  return role.includes("�") || role.toLowerCase().includes("hã") ? "Hôte / Hôtesse événementiel" : role;
 }

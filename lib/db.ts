@@ -12,14 +12,17 @@ import type {
 import { persistStore, store } from "./store";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVER_KEY =
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY;
 
-export const usingSupabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+export const usingSupabase = Boolean(SUPABASE_URL && SUPABASE_SERVER_KEY);
 
 let _client: SupabaseClient | null = null;
 function sb(): SupabaseClient {
   if (!_client) {
-    _client = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+    _client = createClient(SUPABASE_URL!, SUPABASE_SERVER_KEY!, {
       auth: { persistSession: false },
     });
   }

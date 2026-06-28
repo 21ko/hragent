@@ -80,15 +80,15 @@ export default function HomePage() {
         </nav>
         <div className="flex items-center gap-3">
           <LangToggle lang={lang} setLang={setLang} />
-          <a href="#intake" className="btn-primary h-[42px] px-[18px] text-[14.5px]">
+          <Link href="/login" className="btn-primary h-[42px] px-[18px] text-[14.5px]">
             {L.navCta}
-          </a>
+          </Link>
         </div>
       </header>
 
       {/* HERO */}
-      <section className="mx-auto grid max-w-[1280px] items-center gap-10 px-6 py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:px-11 md:py-[72px]">
-        <div>
+      <section className="mx-auto max-w-[1280px] px-6 py-16 md:px-11 md:py-[88px]">
+        <div className="max-w-[760px]">
           <h1 className="text-[clamp(38px,5vw,60px)] font-extrabold leading-[1.02] tracking-[-0.035em] text-balance">
             {L.heroTitle}
           </h1>
@@ -100,19 +100,19 @@ export default function HomePage() {
             {L.heroLeadTail}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
-            <a
-              href="#intake"
+            <Link
+              href="/login"
               className="inline-flex h-[52px] items-center gap-2.5 rounded-[11px] bg-accent px-[26px] text-base font-semibold text-white shadow-[0_2px_8px_rgba(14,143,87,0.25)] transition hover:bg-accent-hover"
             >
               {L.ctaCompany}
               <span className="font-mono">→</span>
-            </a>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/login"
               className="inline-flex h-[52px] items-center gap-2.5 rounded-[11px] border border-line bg-white px-6 text-base font-semibold text-ink transition hover:border-[#c9c9c0]"
             >
               {L.ctaWorker}
-            </button>
+            </Link>
           </div>
           <div className="mt-7 flex items-center gap-3.5 text-sm text-muted">
             <div className="flex">
@@ -133,9 +133,10 @@ export default function HomePage() {
         </div>
 
         {/* INTAKE CARD */}
+        {false && (
         <div
           id="intake"
-          className="scroll-mt-24 rounded-[18px] border border-line bg-white p-[26px] shadow-intake"
+          className="hidden"
         >
           <div className="mb-5 flex items-center justify-between">
             <div className="text-base font-bold">{L.intakeTitle}</div>
@@ -284,10 +285,12 @@ export default function HomePage() {
             {L.intakeFootnote}
           </div>
         </div>
+        )}
       </section>
 
       {/* TRUST STRIP */}
-      <section className="mx-auto max-w-[1280px] px-6 pb-14 md:px-11">
+      {false && (
+      <section className="hidden">
         <div className="mb-6 text-center font-mono text-[11.5px] uppercase tracking-[0.1em] text-muted">
           {L.trust}
         </div>
@@ -306,6 +309,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* STATS */}
       <section className="mx-auto max-w-[1280px] px-6 pb-16 md:px-11">
@@ -370,7 +374,7 @@ export default function HomePage() {
             </p>
           </div>
           <a
-            href="#intake"
+            href="/login"
             className="inline-flex h-[54px] flex-none items-center gap-2.5 rounded-xl bg-accent px-7 text-[16.5px] font-semibold text-white transition hover:bg-accent-hover"
           >
             {L.ctaBandButton}
