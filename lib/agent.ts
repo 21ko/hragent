@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type {
   AgentResult,
   Candidate,
@@ -13,11 +12,10 @@ import {
   urgencyBand,
   urgencyMultiplier,
 } from "./pricing";
+import { callClaude, usingClaude } from "./claude";
+import { clamp01, round2 } from "./math";
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-export const usingClaude = Boolean(ANTHROPIC_API_KEY);
-
-const MODEL = "claude-sonnet-4-6";
+export { usingClaude };
 
 const OUTPUT_SCHEMA = {
   type: "object",
@@ -137,28 +135,10 @@ async function runClaudeAgent(
   brief: JobBrief,
   candidates: Candidate[],
 ): Promise<AgentResult> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
-  // `output_config` (structured outputs) isn't in this SDK version's types yet,
-  // so build the params untyped and cast for the call.
-  const params = {
-    model: MODEL,
-    max_tokens: 4096,
-    output_config: {
-      format: { type: "json_schema", schema: OUTPUT_SCHEMA as object },
-    },
-    messages: [{ role: "user", content: buildPrompt(brief, candidates) }],
-  };
-
-  const response = await client.messages.create(
-    params as unknown as Anthropic.MessageCreateParamsNonStreaming,
-  );
-
-  const text = response.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") {
-    throw new Error("No text block in Claude response");
-  }
-  const parsed = JSON.parse(text.text) as AgentResult;
+  const parsed = await callClaude<AgentResult>({
+    schema: OUTPUT_SCHEMA as object,
+    content: buildPrompt(brief, candidates),
+  });
   return sanitize(parsed, brief, candidates);
 }
 
@@ -380,14 +360,6 @@ function normalize(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-}
-
-function clamp01(value: number): number {
-  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
-}
-
-function round2(value: number): number {
-  return Math.round(clamp01(value) * 100) / 100;
 }
 
 function buildBrief(brief: JobBrief): string {

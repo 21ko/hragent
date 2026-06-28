@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addMissionEvent, updateMissionCandidate } from "@/lib/db";
+import { badRequest } from "@/lib/api-helpers";
 import { whatsappFallback } from "@/lib/outreach";
 import { reconcileMissionProgress } from "@/lib/mission-progress";
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   };
   const { missionId, candidateId, outcome } = body;
   if (!missionId || !candidateId || !outcome) {
-    return NextResponse.json({ error: "Paramètres manquants." }, { status: 400 });
+    return badRequest("Paramètres manquants.");
   }
 
   if (outcome === "answered") {

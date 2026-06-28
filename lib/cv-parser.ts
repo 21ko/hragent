@@ -1,14 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { createHash } from "crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
 import type { Candidate, CandidateProfile } from "./types";
 import { normalizePhone } from "./db";
 import { baseRateForRole } from "./pricing";
-
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = "claude-sonnet-4-6";
-const CACHE_ROOT = join(process.cwd(), ".staffly", "cv-cache");
+import { callClaude, usingClaude } from "./claude";
+import { cachedCompute } from "./cache";
+import { clamp, clamp01 } from "./math";
 
 const CV_SCHEMA = {
   type: "object",
@@ -67,27 +62,19 @@ export async function parseAndValidateCv(text: string): Promise<ValidatedCv> {
     };
   }
 
-  const hash = createHash("sha256").update(normalizedText).digest("hex");
-  const cachePath = join(CACHE_ROOT, `${hash}.json`);
-  let profile: CandidateProfile;
-  let fromCache = false;
-
-  if (existsSync(cachePath)) {
-    profile = JSON.parse(readFileSync(cachePath, "utf8")) as CandidateProfile;
-    fromCache = true;
-  } else {
-    profile = ANTHROPIC_API_KEY
-      ? await parseWithClaude(normalizedText)
-      : mockParseCv(normalizedText);
-    mkdirSync(dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, JSON.stringify(profile, null, 2), "utf8");
-  }
+  const { value: profile, fromCache } = await cachedCompute<CandidateProfile>(
+    normalizedText,
+    () =>
+      usingClaude
+        ? parseWithClaude(normalizedText)
+        : Promise.resolve(mockParseCv(normalizedText)),
+  );
 
   return validateProfile(profile, fromCache);
 }
 
 export async function parseScannedPdf(buffer: Buffer): Promise<ValidatedCv> {
-  if (!ANTHROPIC_API_KEY) {
+  if (!usingClaude) {
     return {
       candidate: null,
       needsReview: true,
@@ -95,33 +82,19 @@ export async function parseScannedPdf(buffer: Buffer): Promise<ValidatedCv> {
       fromCache: false,
     };
   }
-  const hash = createHash("sha256").update(buffer).digest("hex");
-  const cachePath = join(CACHE_ROOT, `${hash}.json`);
-  let profile: CandidateProfile;
-  let fromCache = false;
-  if (existsSync(cachePath)) {
-    profile = JSON.parse(readFileSync(cachePath, "utf8")) as CandidateProfile;
-    fromCache = true;
-  } else {
-    profile = await parseScannedWithClaude(buffer);
-    mkdirSync(dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, JSON.stringify(profile, null, 2), "utf8");
-  }
+
+  const { value: profile, fromCache } = await cachedCompute<CandidateProfile>(
+    buffer,
+    () => parseScannedWithClaude(buffer),
+  );
+
   return validateProfile(profile, fromCache);
 }
 
 async function parseWithClaude(text: string): Promise<CandidateProfile> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-  const params = {
-    model: MODEL,
-    max_tokens: 2048,
-    output_config: {
-      format: { type: "json_schema", schema: CV_SCHEMA as object },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `Extract one staffing candidate from this CV.
+  return callClaude<CandidateProfile>({
+    schema: CV_SCHEMA as object,
+    content: `Extract one staffing candidate from this CV.
 
 Read the CV by sections: basics/contact, work experience, education, skills,
 languages and projects. Return only the schema. Keep role_type as useful free
@@ -130,57 +103,31 @@ Never invent a phone number, city, rate or experience.
 
 CV TEXT:
 ${text.slice(0, 20_000)}`,
-      },
-    ],
-  };
-  const response = await client.messages.create(
-    params as unknown as Anthropic.MessageCreateParamsNonStreaming,
-  );
-  const block = response.content.find((item) => item.type === "text");
-  if (!block || block.type !== "text") {
-    throw new Error("No text block in CV parser response.");
-  }
-  return JSON.parse(block.text) as CandidateProfile;
+    maxTokens: 2048,
+  });
 }
 
 async function parseScannedWithClaude(
   buffer: Buffer,
 ): Promise<CandidateProfile> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-  const params = {
-    model: MODEL,
-    max_tokens: 2048,
-    output_config: {
-      format: { type: "json_schema", schema: CV_SCHEMA as object },
-    },
-    messages: [
+  return callClaude<CandidateProfile>({
+    schema: CV_SCHEMA as object,
+    content: [
       {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: buffer.toString("base64"),
-            },
-          },
-          {
-            type: "text",
-            text: "Extract the candidate using the requested schema. Never invent missing contact details.",
-          },
-        ],
+        type: "document",
+        source: {
+          type: "base64",
+          media_type: "application/pdf",
+          data: buffer.toString("base64"),
+        },
       },
-    ],
-  };
-  const response = await client.messages.create(
-    params as unknown as Anthropic.MessageCreateParamsNonStreaming,
-  );
-  const block = response.content.find((item) => item.type === "text");
-  if (!block || block.type !== "text") {
-    throw new Error("No text block in scanned CV parser response.");
-  }
-  return JSON.parse(block.text) as CandidateProfile;
+      {
+        type: "text",
+        text: "Extract the candidate using the requested schema. Never invent missing contact details.",
+      },
+    ] as unknown as string,
+    maxTokens: 2048,
+  });
 }
 
 function validateProfile(
@@ -286,12 +233,4 @@ function inferRole(text: string): string {
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : min;
-}
-
-function clamp01(value: number): number {
-  return clamp(value, 0, 1);
 }

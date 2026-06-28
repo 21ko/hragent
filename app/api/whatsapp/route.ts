@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { addMissionEvent, updateWhatsappStatusByPhone } from "@/lib/db";
+import { twimlResponse } from "@/lib/api-helpers";
 import type { WhatsappStatus } from "@/lib/types";
 import { reconcileMissionProgress } from "@/lib/mission-progress";
 
@@ -38,7 +38,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // Reply with empty TwiML so Twilio doesn't error.
   const reply =
     status === "replied_yes"
       ? "Merci ! Nous confirmons votre disponibilité. ✅"
@@ -46,9 +45,8 @@ export async function POST(req: Request) {
         ? "Compris, merci pour votre réponse."
         : "Merci. Répondez OUI ou NON pour confirmer votre disponibilité.";
 
-  return new NextResponse(
+  return twimlResponse(
     `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${reply}</Message></Response>`,
-    { status: 200, headers: { "Content-Type": "text/xml" } },
   );
 }
 

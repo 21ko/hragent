@@ -1,22 +1,17 @@
 import { NextResponse } from "next/server";
 import type { JobBrief } from "@/lib/types";
+import { badRequest, parseJsonBody } from "@/lib/api-helpers";
 import { runMission, validateBrief } from "@/lib/run-mission";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  let brief: JobBrief;
-  try {
-    brief = (await req.json()) as JobBrief;
-  } catch {
-    return NextResponse.json({ error: "Corps JSON invalide." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody<JobBrief>(req);
+  if (parsed instanceof NextResponse) return parsed;
 
-  const invalid = validateBrief(brief);
-  if (invalid) {
-    return NextResponse.json({ error: invalid }, { status: 400 });
-  }
+  const invalid = validateBrief(parsed);
+  if (invalid) return badRequest(invalid);
 
-  const result = await runMission(brief);
+  const result = await runMission(parsed);
   return NextResponse.json({ missionId: result.missionId });
 }

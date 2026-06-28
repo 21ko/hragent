@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkApiKey } from "@/lib/auth";
-import { getMission, getMissionEvents, getShortlist } from "@/lib/db";
-import { isCandidateTerminal } from "@/lib/mission-progress";
+import { notFound, unauthorized } from "@/lib/api-helpers";
+import { fetchMissionData } from "@/lib/mission-data";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +14,17 @@ export async function GET(
   req: Request,
   { params }: { params: { missionId: string } },
 ) {
-  if (!checkApiKey(req)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-  const mission = await getMission(params.missionId);
-  if (!mission) {
-    return NextResponse.json({ error: "Mission not found." }, { status: 404 });
-  }
-  const [shortlist, events] = await Promise.all([
-    getShortlist(params.missionId),
-    getMissionEvents(params.missionId),
-  ]);
+  if (!checkApiKey(req)) return unauthorized();
 
-  const resolved = shortlist.filter(isCandidateTerminal).length;
-  const complete = mission.status === "complete";
+  const data = await fetchMissionData(params.missionId);
+  if (!data) return notFound("Mission not found.");
+
+  const { mission, shortlist, events, progress } = data;
   return NextResponse.json({
     mission,
-    progress: { resolved, total: shortlist.length, complete },
-    results_sealed: !complete,
-    shortlist: complete ? shortlist.map((e) => ({
+    progress,
+    results_sealed: !progress.complete,
+    shortlist: progress.complete ? shortlist.map((e) => ({
       rank: e.rank,
       name: e.candidate.name,
       city: e.candidate.city,
