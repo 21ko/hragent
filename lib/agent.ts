@@ -318,7 +318,7 @@ export function computeTrustedFit(
       : 0.5;
 
   const requiredYears = inferRequiredYears(
-    `${brief.role_type} ${brief.description}`,
+    `${brief.role_type} ${brief.description || ""}`,
   );
   const experience =
     requiredYears <= 0
@@ -328,7 +328,7 @@ export function computeTrustedFit(
   const location =
     normalize(candidate.city) === normalize(brief.city) ? 1 : 0.35;
 
-  const requiredLanguages = inferRequiredLanguages(brief.description);
+  const requiredLanguages = inferRequiredLanguages(brief.description || "");
   const candidateLanguages = (candidate.languages ?? []).map(normalize);
   const language =
     requiredLanguages.length === 0
