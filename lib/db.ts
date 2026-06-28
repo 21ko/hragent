@@ -9,7 +9,7 @@ import type {
   ShortlistEntry,
   WhatsappStatus,
 } from "./types";
-import { store } from "./store";
+import { persistStore, store } from "./store";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -92,6 +92,7 @@ export async function createMission(
     return data as Mission;
   }
   store().missions.unshift(row);
+  persistStore();
   return row;
 }
 
@@ -105,7 +106,10 @@ export async function updateMission(
     return;
   }
   const m = store().missions.find((x) => x.id === id);
-  if (m) Object.assign(m, patch);
+  if (m) {
+    Object.assign(m, patch);
+    persistStore();
+  }
 }
 
 export async function getMission(id: string): Promise<Mission | null> {
@@ -151,6 +155,7 @@ export async function insertMissionCandidates(
     return;
   }
   store().missionsCandidates.push(...stamped);
+  persistStore();
 }
 
 export async function getShortlist(
@@ -208,6 +213,7 @@ export async function updateWhatsappStatusByPhone(
   if (!target) return null;
   target.whatsapp_status = status;
   target.updated_at = new Date().toISOString();
+  persistStore();
   return target;
 }
 
@@ -230,7 +236,10 @@ export async function updateMissionCandidate(
   const mc = store().missionsCandidates.find(
     (x) => x.mission_id === missionId && x.candidate_id === candidateId,
   );
-  if (mc) Object.assign(mc, stamped);
+  if (mc) {
+    Object.assign(mc, stamped);
+    persistStore();
+  }
 }
 
 // ---------- mission_events (agent activity trace) ----------
@@ -254,6 +263,7 @@ export async function addMissionEvent(
     return;
   }
   store().missionEvents.push(row);
+  persistStore();
 }
 
 export async function getMissionEvents(
