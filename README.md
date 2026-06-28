@@ -1,8 +1,13 @@
 # Staffly — AI-powered interim staffing agency
 
+> **🎥 Demo video:** _add link here_ · **📊 Pitch deck:** _add link here_
+>
+> Built for the **Paris Builds** hackathon (Software for Agents track, in partnership with YC).
+
 An AI agent that handles interim event staffing end-to-end: it parses a job
-brief, matches candidates from a database, computes fair pricing, and reaches
-out to the best profiles over WhatsApp.
+brief, matches candidates from a database, computes fair pricing, **calls** the
+best profiles to run a short HR screen, and **falls back to WhatsApp** when they
+don't pick up.
 
 Built with **Next.js 14 (App Router)**, **Claude (`claude-sonnet-4-6`)**,
 **Supabase**, **Twilio (voice + WhatsApp)**, and **Tailwind CSS**.
@@ -63,9 +68,15 @@ npm run dev
 # open http://localhost:3000
 ```
 
-Fill the form → the agent shortlists + prices + "sends" WhatsApp → you land on
-the results page. On the results page you can **Simuler OUI / NON** to drive the
-WhatsApp status updates (which poll every 5s) without a real phone.
+Then **log in** (mock auth — pick a role, no password needed) and:
+
+1. **Company** → **New mission** (`/missions/new`): fill the brief → the agent
+   shortlists + prices + calls + "sends" WhatsApp → you land on the live
+   **results** page. There you can **Simuler OUI / NON** to drive the WhatsApp
+   status updates (which poll every 5s) without a real phone.
+2. **Dashboard** lists every mission; **Candidates** is the talent space;
+   **Developers** documents the agent-facing API; **Admin** is the Staffly
+   operations view.
 
 ## Going live (optional)
 
@@ -83,18 +94,31 @@ etc.
 
 ```
 app/
-  page.tsx                      # intake form
-  results/[missionId]/page.tsx  # results: cards, pricing, polling, copy brief
-  dashboard/page.tsx            # all missions
-  api/agent/route.ts            # the core agent: rank -> price -> persist -> WhatsApp
-  api/missions/[missionId]/route.ts  # polled by results page
-  api/whatsapp/route.ts         # Twilio inbound webhook (OUI/NON)
+  page.tsx                        # marketing landing
+  login/page.tsx                  # mock auth (role picker, no password)
+  missions/new/page.tsx           # the intake form (brief -> agent)
+  results/[missionId]/page.tsx    # results: cards, pricing, live trace, polling
+  dashboard/page.tsx              # all missions
+  candidates/page.tsx             # talent space
+  developers/page.tsx             # agent-facing API docs
+  admin/page.tsx                  # Staffly operations view
+  transactions/page.tsx           # billing view
+  api/agent/route.ts              # the core agent: rank -> price -> call -> WhatsApp
+  api/missions/[missionId]/route.ts   # polled by results page (status + trace)
+  api/voice/*                     # Twilio voice: call, TwiML, status, simulate
+  api/whatsapp/route.ts           # Twilio inbound webhook (OUI/NON)
+  api/candidates/import/route.ts  # CV upload -> structured candidate
+  api/v1/*                        # stable agent-facing REST + tool manifest
 lib/
-  agent.ts        # Claude call (structured JSON) + deterministic mock
+  agent.ts        # Claude call (structured JSON) + deterministic mock + fit-scoring
   pricing.ts      # base x exp_multiplier x urgency_multiplier
   db.ts           # Supabase-or-mock data access
+  voice.ts        # Twilio call (or simulated)
   whatsapp.ts     # Twilio send (or console log)
-  seed-data.ts    # 15 French candidate profiles
+  cv-extract.ts   # local PDF/DOCX -> text (token-cheap CV parsing)
+  session.tsx     # mock auth context
+  i18n.tsx        # FR / EN dictionary + toggle
+  seed-data.ts    # French candidate profiles
 supabase/schema.sql
 scripts/seed.ts
 ```
